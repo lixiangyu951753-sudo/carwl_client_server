@@ -1,12 +1,17 @@
-version: '3.8'
-
 services:
   server:
     build: ./server
+    container_name: crawler-server
     ports:
-      - "5000:5000"
+      - "0.0.0.0:5001:5000"
     environment:
-      - MONGO_URI=mongodb://192.168.80.190:27017/
+      - MONGO_URI=mongodb://mongodb_w6ry-mongodb_w6RY-1:27017/
       - MONGO_DB=crawler_db
       - SECRET_KEY=crawler-secret-key-2026
     restart: unless-stopped
+    networks:
+      - baota_net
+
+networks:
+  baota_net:
+    external: true
