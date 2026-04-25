@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  server:
+    build: ./server
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://192.168.80.190:27017/
+      - MONGO_DB=crawler_db
+      - SECRET_KEY=crawler-secret-key-2026
+    restart: unless-stopped
