@@ -186,60 +186,120 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         "local_folder": file_name
     }
 
-def shop_list(server_task_id: str = None):
+def shop_list(server_task_id: str = None, shop_url: str = None):
     batch_id = gen_batch_id()
-    print(f"开始新批次任务: {batch_id}")
+    print(f"开始新批次任务: {batch_id}, 店铺URL: {shop_url}")
     save_batch(batch_id, 'running')
 
-    tab = browser.latest_tab
-    completed_count = 0
-    page_num = 1
-    products = []
+    max_retry = 3
+    retry_count = 0
+    
+    while retry_count < max_retry:
+        try:
+            tab = browser.latest_tab
+            completed_count = 0
+            page_num = 1
+            products = []
 
-    while True:
-        print(f"\n===== 第 {page_num} 页 =====")
+            while True:
+                print(f"\n===== 第 {page_num} 页 =====")
+                #判断是否在目标页
+                categorys = tab.eles('x://div[@class="first-category"]')
+                
+                if categorys:
+                    first_cat_style = categorys[0].attr('style') or ''
+                    is_selected = 'bold' in first_cat_style
+                    print(f"第一个分类选中状态: {is_selected}")
+                    
+                    if not is_selected:
+                        print("第一个分类未选中，退出")
+                        if server_task_id:
+                            api.report_progress(server_task_id, "failed", error="第一个分类未选中，页面可能不正确")
+                        return {
+                            "batch_id": batch_id,
+                            "products": products,
+                            "error": "第一个分类未选中"
+                        }
+                #商品列表
+                
+                divs = tab.eles('x://*[@id="bd_1_container_0"]/div/div[2]/div[5]/div')
+                print(f"本页商品数量: {len(divs)}")
 
-        divs = tab.eles('x://*[@id="bd_1_container_0"]/div/div[2]/div[5]/div')
-        print(f"本页商品数量: {len(divs)}")
+                for div in divs:
+                    print(div.text)
+                    div.click()
+                    tab.wait(1)
+                    result = shop_detail(batch_id, server_task_id)
+                    if result:
+                        products.append(result)
+                    completed_count += 1
+                    tab.wait(3)
 
-        for div in divs:
-            print(div.text)
-            div.click()
-            tab.wait(1)
-            result = shop_detail(batch_id, server_task_id)
-            if result:
-                products.append(result)
-            completed_count += 1
-            tab.wait(5)
+                    if server_task_id:
+                        api.report_progress(server_task_id, "running", progress={
+                            "current_page": page_num,
+                            "current_product": completed_count
+                        })
 
-            if server_task_id:
-                api.report_progress(server_task_id, "running", progress={
-                    "current_page": page_num,
-                    "current_product": completed_count
-                })
+                next_btn = tab.ele('下一页')
+                if not next_btn:
+                    print("未找到下一页按钮，停止翻页")
+                    break
 
-        next_btn = tab.ele('下一页')
-        if not next_btn:
-            print("未找到下一页按钮，停止翻页")
-            break
+                style = next_btn.attr('style') or ''
+                if 'rgb(204, 204, 204)' in style:
+                    print("下一页按钮不可用，停止翻页")
+                    break
 
-        style = next_btn.attr('style') or ''
-        if 'rgb(204, 204, 204)' in style:
-            print("下一页按钮不可用，停止翻页")
-            break
+                print("点击下一页")
+                next_btn.click()
+                tab.wait(3)
+                page_num += 1
 
-        print("点击下一页")
-        next_btn.click()
-        tab.wait(3)
-        page_num += 1
+            save_batch(batch_id, 'completed', product_count=completed_count)
+            print(f"\n批次 {batch_id} 完成，共爬取 {completed_count} 个商品，总页数 {page_num} 页")
 
-    save_batch(batch_id, 'completed', product_count=completed_count)
-    print(f"\n批次 {batch_id} 完成，共爬取 {completed_count} 个商品，总页数 {page_num} 页")
-
-    return {
-        "batch_id": batch_id,
-        "products": products
-    }
+            return {
+                "batch_id": batch_id,
+                "products": products
+            }
+            
+        except Exception as e:
+            error_msg = str(e)
+            print(f"[错误] 浏览器连接异常: {error_msg}")
+            retry_count += 1
+            
+            if retry_count < max_retry:
+                print(f"[重试] 第 {retry_count} 次重试，重新打开浏览器...")
+                if server_task_id:
+                    api.report_progress(server_task_id, "running", progress={
+                        "status": "reconnecting",
+                        "retry": retry_count
+                    })
+                
+                # 重新打开浏览器并进入目标页
+                if shop_url:
+                    print(f"[爬虫] 重新打开店铺: {shop_url}")
+                    browser.get(shop_url)
+                    browser.latest_tab.wait(3)
+                else:
+                    print("[爬虫] 未提供店铺URL，无法重新打开")
+                    if server_task_id:
+                        api.report_progress(server_task_id, "failed", error="浏览器连接断开且未提供店铺URL")
+                    return {
+                        "batch_id": batch_id,
+                        "products": [],
+                        "error": "浏览器连接断开且未提供店铺URL"
+                    }
+            else:
+                print(f"[错误] 重试 {max_retry} 次后仍然失败")
+                if server_task_id:
+                    api.report_progress(server_task_id, "failed", error=f"浏览器连接断开，重试{max_retry}次后失败: {error_msg}")
+                return {
+                    "batch_id": batch_id,
+                    "products": [],
+                    "error": f"浏览器连接断开，重试{max_retry}次后失败"
+                }
 
 def crawl_callback(task_id: str, params: dict):
     """任务管理器回调函数"""
@@ -250,8 +310,11 @@ def crawl_callback(task_id: str, params: dict):
         print(f"[爬虫] 打开店铺: {shop_url}")
         browser.get(shop_url)
         browser.latest_tab.wait(3)
+    else:
+        print(f"[爬虫] 未提供店铺URL，任务 {task_id} 使用浏览器默认打开的网页")
+        browser.latest_tab.wait(1)
 
-    result = shop_list(server_task_id=task_id)
+    result = shop_list(server_task_id=task_id, shop_url=shop_url)
     return result
 
 def main():

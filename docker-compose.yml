@@ -1,17 +1,47 @@
 services:
+  mongodb:
+    image: mongo:latest
+    container_name: crawler-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=crawler_db
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    restart: unless-stopped
+    networks:
+      - crawler_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   server:
     build: ./server
     container_name: crawler-server
     ports:
       - "0.0.0.0:5001:5000"
     environment:
-      - MONGO_URI=mongodb://mongodb_w6ry-mongodb_w6RY-1:27017/
+      - MONGO_URI=mongodb://admin:admin123@mongodb:27017/
       - MONGO_DB=crawler_db
       - SECRET_KEY=crawler-secret-key-2026
+    depends_on:
+      mongodb:
+        condition: service_healthy
     restart: unless-stopped
     networks:
-      - baota_net
+      - crawler_network
+    volumes:
+      - ./server:/app
+
+volumes:
+  mongodb_data:
+  mongodb_config:
 
 networks:
-  baota_net:
-    external: true
+  crawler_network:
+    driver: bridge
