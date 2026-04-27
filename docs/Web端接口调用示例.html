@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collector Service - Web调用示例</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .api-section { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .method { display: inline-block; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .get { background: #61affe; color: white; }
+        .post { background: #49cc90; color: white; }
+        .url { font-family: monospace; background: #f5f5f5; padding: 5px; }
+        .params { background: #f8f8f8; padding: 10px; margin: 10px 0; }
+        .code-block { background: #272822; color: #f8f8f2; padding: 15px; overflow-x: auto; border-radius: 5px; }
+        pre { margin: 0; }
+        .keyword { color: #f92672; }
+        .string { color: #e6db74; }
+        .comment { color: #75715e; }
+        h3 { color: #333; margin-top: 30px; }
+        .nav { background: #f5f5f5; padding: 10px; position: sticky; top: 0; }
+        .nav a { margin-right: 15px; text-decoration: none; color: #0066cc; }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <a href="#health">健康检查</a>
+    <a href="#sources">采集源</a>
+    <a href="#tasks">采集任务</a>
+    <a href="#items">采集结果</a>
+    <a href="#js-example">JS调用示例</a>
+</div>
+
+<h1>Collector Service - Web端接口调用示例</h1>
+
+<p><strong>Base URL:</strong> <code>http://localhost:5000/api/v1</code></p>
+<p><strong>注意:</strong> 以下示例假设前端页面运行在不同端口，需要CORS支持（已通过flask-cors配置）</p>
+
+<hr>
+
+<h2 id="health">1. 健康检查</h2>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/health</span>
+</div>
+
+<p><strong>说明:</strong> 检查服务状态和依赖（数据库、Redis、OSS）</p>
+
+<p><strong>响应示例:</strong></p>
+<div class="code-block">
+<pre>{
+  <span class="string">"code"</span>: <span class="string">"OK"</span>,
+  <span class="string">"message"</span>: <span class="string">"success"</span>,
+  <span class="string">"data"</span>: {
+    <span class="string">"status"</span>: <span class="string">"ok"</span>,
+    <span class="string">"service"</span>: <span class="string">"collector-service"</span>,
+    <span class="string">"version"</span>: <span class="string">"0.1.0"</span>,
+    <span class="string">"dependencies"</span>: {
+      <span class="string">"database"</span>: <span class="string">"ok"</span>,
+      <span class="string">"redis"</span>: <span class="string">"ok"</span>,
+      <span class="string">"oss"</span>: <span class="string">"ok"</span>
+    },
+    <span class="string">"time"</span>: <span class="string">"2026-04-27T20:00:00"</span>
+  }
+}</pre>
+</div>
+
+<hr>
+
+<h2 id="sources">2. 采集源管理</h2>
+
+<h3>2.1 获取采集源列表</h3>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/sources</span>
+</div>
+
+<p><strong>Query参数:</strong></p>
+<div class="params">
+<table>
+<tr><td>page</td><td>页码（默认1）</td></tr>
+<tr><td>pageSize</td><td>每页数量（默认20）</td></tr>
+<tr><td>keyword</td><td>关键词搜索（匹配名称或编码）</td></tr>
+<tr><td>platform</td><td>平台筛选（如1688、taobao）</td></tr>
+<tr><td>status</td><td>状态筛选（enabled/disabled）</td></tr>
+</table>
+</div>
+
+<p><strong>请求示例:</strong></p>
+<div class="code-block">
+<pre><span class="comment">// 获取1688平台的采集源，第1页，每页10条</span>
+fetch(<span class="string">'http://localhost:5000/api/v1/sources?platform=1688&page=1&pageSize=10'</span>)
+  .then(res => res.json())
+  .then(console.log)</pre>
+</div>
+
+<h3>2.2 获取采集源详情</h3>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/sources/detail?sourceId=xxx</span>
+</div>
+
+<h3>2.3 创建采集源</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/sources/create</span>
+</div>
+
+<p><strong>请求体:</strong></p>
+<div class="code-block">
+<pre>{
+  <span class="string">"sourceCode"</span>: <span class="string">"SRC_1688_DEFAULT"</span>,    <span class="comment">// 必填，采集源编码</span>
+  <span class="string">"sourceName"</span>: <span class="string">"1688默认采集源"</span>,      <span class="comment">// 必填，采集源名称</span>
+  <span class="string">"platform"</span>: <span class="string">"1688"</span>,                 <span class="comment">// 平台</span>
+  <span class="string">"sourceType"</span>: <span class="string">"url"</span>,                 <span class="comment">// 类型：url/shop/keyword</span>
+  <span class="string">"entryUrl"</span>: <span class="string">"https://xindeyi.1688.com"</span>,  <span class="comment">// 入口URL</span>
+  <span class="string">"parserCode"</span>: <span class="string">"1688_offer_v1"</span>,
+  <span class="string">"config"</span>: {                         <span class="comment">// 配置项</span>
+    <span class="string">"rateLimitPerMinute"</span>: <span class="string">"60"</span>,
+    <span class="string">"timeoutSeconds"</span>: <span class="string">"30"</span>,
+    <span class="string">"retryTimes"</span>: <span class="string">"2"</span>,
+    <span class="string">"saveImagesToOss"</span>: <span class="keyword">true</span>
+  }
+}</pre>
+</div>
+
+<p><strong>请求示例:</strong></p>
+<div class="code-block">
+<pre><span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5000/api/v1/sources/create'</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+  body: JSON.stringify({
+    sourceCode: <span class="string">'SRC_1688_DEFAULT'</span>,
+    sourceName: <span class="string">'1688默认采集源'</span>,
+    platform: <span class="string">'1688'</span>,
+    sourceType: <span class="string">'url'</span>,
+    entryUrl: <span class="string">'https://xindeyi.1688.com'</span>
+  })
+});
+<span class="keyword">const</span> data = <span class="keyword">await</span> response.json();
+console.log(data);</pre>
+</div>
+
+<h3>2.4 更新采集源</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/sources/update</span>
+</div>
+
+<h3>2.5 启用/禁用采集源</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/sources/enable</span>
+    <br>
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/sources/disable</span>
+</div>
+
+<p><strong>请求体:</strong></p>
+<div class="code-block">
+<pre>{ <span class="string">"sourceId"</span>: <span class="string">"src_14871529"</span> }</pre>
+</div>
+
+<h3>2.6 删除采集源（软删除）</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/sources/delete</span>
+</div>
+
+<hr>
+
+<h2 id="tasks">3. 采集任务</h2>
+
+<h3>3.1 创建采集任务</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/tasks/create</span>
+</div>
+
+<p><strong>请求体:</strong></p>
+<div class="code-block">
+<pre>{
+  <span class="string">"taskType"</span>: <span class="string">"shop"</span>,              <span class="comment">// 必填：single_url/batch_url/shop/keyword</span>
+  <span class="string">"sourceId"</span>: <span class="string">"src_14871529"</span>,    <span class="comment">// 采集源ID</span>
+  <span class="string">"targetUrls"</span>: [],                <span class="comment">// batch_url时使用，批量URL列表</span>
+  <span class="string">"options"</span>: {
+    <span class="string">"maxItems"</span>: <span class="string">"200"</span>,            <span class="comment">// 最大采集数量</span>
+    <span class="string">"concurrency"</span>: <span class="string">"3"</span>,         <span class="comment">// 并发数</span>
+    <span class="string">"saveImagesToOss"</span>: <span class="keyword">true</span>
+  },
+  <span class="string">"operatorId"</span>: <span class="string">"user_001"</span>,      <span class="comment">// 操作人ID</span>
+  <span class="string">"idempotencyKey"</span>: <span class="string">"key_xxx"</span>  <span class="comment">// 幂等键（可选）</span>
+}</pre>
+</div>
+
+<p><strong>请求示例:</strong></p>
+<div class="code-block">
+<pre><span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5000/api/v1/tasks/create'</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+  body: JSON.stringify({
+    taskType: <span class="string">'shop'</span>,
+    sourceId: <span class="string">'src_14871529'</span>,
+    options: { maxItems: <span class="string">'200'</span> }
+  })
+});
+<span class="keyword">const</span> data = <span class="keyword">await</span> response.json();
+<span class="comment">// 返回: { taskId: "task_xxx", taskNo: "COL20260427XXXX", status: "pending" }</span></pre>
+</div>
+
+<h3>3.2 获取任务列表</h3>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/tasks</span>
+</div>
+
+<p><strong>Query参数:</strong></p>
+<div class="params">
+<table>
+<tr><td>page</td><td>页码（默认1）</td></tr>
+<tr><td>pageSize</td><td>每页数量（默认20）</td></tr>
+<tr><td>status</td><td>状态筛选（pending/running/completed/failed/canceled）</td></tr>
+<tr><td>taskType</td><td>任务类型筛选</td></tr>
+<tr><td>sourceId</td><td>采集源ID筛选</td></tr>
+<tr><td>keyword</td><td>关键词搜索</td></tr>
+<tr><td>createdAtStart</td><td>创建时间起（如 2026-04-01）</td></tr>
+<tr><td>createdAtEnd</td><td>创建时间止</td></tr>
+</table>
+</div>
+
+<h3>3.3 获取任务详情</h3>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/tasks/detail?taskId=xxx</span>
+</div>
+
+<h3>3.4 取消任务</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/tasks/cancel</span>
+</div>
+
+<p><strong>请求体:</strong></p>
+<div class="code-block">
+<pre>{ <span class="string">"taskId"</span>: <span class="string">"task_9b1b9612"</span> }</pre>
+</div>
+
+<h3>3.5 重试任务</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/tasks/retry</span>
+</div>
+
+<hr>
+
+<h2 id="items">4. 采集结果</h2>
+
+<h3>4.1 获取采集结果列表</h3>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/items</span>
+</div>
+
+<p><strong>Query参数:</strong></p>
+<div class="params">
+<table>
+<tr><td>page</td><td>页码</td></tr>
+<tr><td>pageSize</td><td>每页数量</td></tr>
+<tr><td>taskId</td><td>任务ID筛选</td></tr>
+<tr><td>platform</td><td>平台筛选</td></tr>
+<tr><td>parseStatus</td><td>解析状态（pending/parsed/ignored）</td></tr>
+<tr><td>keyword</td><td>关键词搜索（标题或URL）</td></tr>
+</table>
+</div>
+
+<h3>4.2 获取采集结果详情</h3>
+
+<div class="api-section">
+    <span class="method get">GET</span>
+    <span class="url">/api/v1/items/detail?itemId=xxx</span>
+</div>
+
+<h3>4.3 重新解析 / 忽略 / 恢复</h3>
+
+<div class="api-section">
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/items/reparse</span>
+    <br>
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/items/ignore</span>
+    <br>
+    <span class="method post">POST</span>
+    <span class="url">/api/v1/items/restore</span>
+</div>
+
+<hr>
+
+<h2 id="js-example">5. 完整JS调用示例（带错误处理）</h2>
+
+<div class="code-block">
+<pre><span class="keyword">const</span> BASE_URL = <span class="string">'http://localhost:5000/api/v1'</span>;
+
+<span class="comment">// 通用请求封装</span>
+<span class="keyword">async function</span> request(url, options = {}) {
+  <span class="keyword">try</span> {
+    <span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">`<span class="keyword">${BASE_URL}</span><span class="keyword">${url}</span>`</span>, {
+      ...options,
+      headers: {
+        <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>,
+        ...options.headers
+      }
+    });
+
+    <span class="keyword">const</span> result = <span class="keyword">await</span> response.json();
+
+    <span class="keyword">if</span> (result.code !== <span class="string">'OK'</span>) {
+      <span class="keyword">throw new</span> Error(result.message || <span class="string">'请求失败'</span>);
+    }
+
+    <span class="keyword">return</span> result.data;
+  } <span class="keyword">catch</span> (error) {
+    console.error(<span class="string">'API请求错误:'</span>, error);
+    <span class="keyword">throw</span> error;
+  }
+}
+
+<span class="comment">// 健康检查</span>
+<span class="keyword">async function</span> checkHealth() {
+  <span class="keyword">return await</span> request(<span class="string">'/health'</span>);
+}
+
+<span class="comment">// 获取采集源列表</span>
+<span class="keyword">async function</span> getSources(params = {}) {
+  <span class="keyword">const</span> query = <span class="keyword">new</span> URLSearchParams(params).toString();
+  <span class="keyword">return await</span> request(<span class="string">`/sources?<span class="keyword">${query}</span>`</span>);
+}
+
+<span class="comment">// 创建采集源</span>
+<span class="keyword">async function</span> createSource(data) {
+  <span class="keyword">return await</span> request(<span class="string">'/sources/create'</span>, {
+    method: <span class="string">'POST'</span>,
+    body: JSON.stringify(data)
+  });
+}
+
+<span class="comment">// 创建采集任务</span>
+<span class="keyword">async function</span> createTask(data) {
+  <span class="keyword">return await</span> request(<span class="string">'/tasks/create'</span>, {
+    method: <span class="string">'POST'</span>,
+    body: JSON.stringify(data)
+  });
+}
+
+<span class="comment">// 获取任务列表</span>
+<span class="keyword">async function</span> getTasks(params = {}) {
+  <span class="keyword">const</span> query = <span class="keyword">new</span> URLSearchParams(params).toString();
+  <span class="keyword">return await</span> request(<span class="string">`/tasks?<span class="keyword">${query}</span>`</span>);
+}
+
+<span class="comment">// 获取任务详情</span>
+<span class="keyword">async function</span> getTaskDetail(taskId) {
+  <span class="keyword">return await</span> request(<span class="string">`/tasks/detail?taskId=<span class="keyword">${taskId}</span>`</span>);
+}
+
+<span class="comment">// 取消任务</span>
+<span class="keyword">async function</span> cancelTask(taskId) {
+  <span class="keyword">return await</span> request(<span class="string">'/tasks/cancel'</span>, {
+    method: <span class="string">'POST'</span>,
+    body: JSON.stringify({ taskId })
+  });
+}
+
+<span class="comment">// 获取采集结果列表</span>
+<span class="keyword">async function</span> getItems(params = {}) {
+  <span class="keyword">const</span> query = <span class="keyword">new</span> URLSearchParams(params).toString();
+  <span class="keyword">return await</span> request(<span class="string">`/items?<span class="keyword">${query}</span>`</span>);
+}
+
+<span class="comment">// 使用示例</span>
+<span class="keyword">async function</span> main() {
+  <span class="comment">// 1. 检查服务状态</span>
+  <span class="keyword">const</span> health = <span class="keyword">await</span> checkHealth();
+  console.log(<span class="string">'服务状态:'</span>, health.status);
+
+  <span class="comment">// 2. 获取采集源列表</span>
+  <span class="keyword">const</span> sources = <span class="keyword">await</span> getSources({ platform: <span class="string">'1688'</span> });
+  console.log(<span class="string">'采集源:'</span>, sources.items);
+
+  <span class="comment">// 3. 创建任务</span>
+  <span class="keyword">const</span> task = <span class="keyword">await</span> createTask({
+    taskType: <span class="string">'shop'</span>,
+    sourceId: <span class="string">'src_14871529'</span>,
+    options: { maxItems: <span class="string">'100'</span> }
+  });
+  console.log(<span class="string">'任务已创建:'</span>, task.taskId);
+
+  <span class="comment">// 4. 轮询任务状态</span>
+  <span class="keyword">const</span> detail = <span class="keyword">await</span> getTaskDetail(task.taskId);
+  console.log(<span class="string">'任务详情:'</span>, detail);
+}
+
+main();</pre>
+</div>
+
+<hr>
+
+<h2>6. 错误码说明</h2>
+
+<table border="1" cellpadding="8" cellspacing="0">
+<tr><th>错误码</th><th>说明</th></tr>
+<tr><td>COLLECTOR_SOURCE_CODE_REQUIRED</td><td>采集源编码不能为空</td></tr>
+<tr><td>COLLECTOR_SOURCE_NAME_REQUIRED</td><td>采集源名称不能为空</td></tr>
+<tr><td>COLLECTOR_SOURCE_CODE_EXISTS</td><td>采集源编码已存在</td></tr>
+<tr><td>COLLECTOR_SOURCE_NOT_FOUND</td><td>采集源不存在</td></tr>
+<tr><td>COLLECTOR_SOURCE_DISABLED</td><td>采集源已停用</td></tr>
+<tr><td>COLLECTOR_TASK_TYPE_REQUIRED</td><td>任务类型不能为空</td></tr>
+<tr><td>COLLECTOR_TASK_TYPE_INVALID</td><td>任务类型不正确</td></tr>
+<tr><td>COLLECTOR_TASK_NOT_FOUND</td><td>任务不存在</td></tr>
+<tr><td>COLLECTOR_TASK_NOT_CANCELABLE</td><td>当前状态不允许取消</td></tr>
+<tr><td>COLLECTOR_TASK_NOT_RETRYABLE</td><td>当前状态不允许重试</td></tr>
+<tr><td>COLLECTOR_ITEM_ID_REQUIRED</td><td>结果ID不能为空</td></tr>
+<tr><td>COLLECTOR_ITEM_NOT_FOUND</td><td>采集结果不存在</td></tr>
+</table>
+
+</body>
+</html>
