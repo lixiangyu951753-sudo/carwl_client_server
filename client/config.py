@@ -1,10 +1,10 @@
 import os
 
 CLIENT_ID = 'client_001'
-SERVER_URL = 'http://localhost:5000/api'
+SERVER_URL = 'http://localhost:5001/api'
 HEARTBEAT_INTERVAL = 5
 
-BASE_PATH = r'D:\works\crawl\1688'
+BASE_PATH = r'D:\client_001_output'
 
 OSS_ACCESS_KEY_ID = os.environ.get('OSS_ACCESS_KEY_ID', '')
 OSS_ACCESS_KEY_SECRET = os.environ.get('OSS_ACCESS_KEY_SECRET', '')
