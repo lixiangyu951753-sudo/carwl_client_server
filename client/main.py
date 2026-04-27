@@ -172,19 +172,25 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         tab_detail.wait(1)
 
     tab_detail.save(path=file_name)
-
+    
+    # 在关闭标签页之前保存需要的信息
+    task_title = tab_detail.title
+    
+    tab_detail.close()
+    print('关闭当前详情标签页')
     save_task(task_id, 'completed', file_name=file_name, url=product_url, batch_id=batch_id)
     print("任务完成")
     save_task(task_id, 'completed', url=product_url, batch_id=batch_id)
-    tab_detail.close()
 
     return {
         "task_id": task_id,
-        "title": tab_detail.title,
+        "title": task_title,
         "url": product_url,
         "status": "completed",
         "local_folder": file_name
     }
+
+
 
 def shop_list(server_task_id: str = None, shop_url: str = None):
     batch_id = gen_batch_id()
