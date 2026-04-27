@@ -2,7 +2,7 @@
 
 ## 基本信息
 
-- **基础路径**: `http://localhost:5000/api`
+- **基础路径**: `http://localhost:5001/api`
 - **数据格式**: JSON
 - **统一响应格式**:
   ```json
