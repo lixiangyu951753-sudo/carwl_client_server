@@ -212,17 +212,17 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
                     print(f"第一个分类选中状态: {is_selected}")
                     
                     if not is_selected:
-                        print("第一个分类未选中，退出")
-                        if server_task_id:
-                            api.report_progress(server_task_id, "failed", error="第一个分类未选中，页面可能不正确")
-                        return {
-                            "batch_id": batch_id,
-                            "products": products,
-                            "error": "第一个分类未选中"
-                        }
+                        print("第一个分类未选中，点击第一个分类")
+                        categorys[0].click()
+                        tab.wait(1)
+
                 #商品列表
                 
                 divs = tab.eles('x://*[@id="bd_1_container_0"]/div/div[2]/div[5]/div')
+                if len(divs) == 0:
+                    print('网页未安装插件，使用新的定位方式')
+                    divs=tab.eles('x://*[@id="bd_1_container_0"]/div/div[2]/div[6]/div')
+
                 print(f"本页商品数量: {len(divs)}")
 
                 for div in divs:
