@@ -271,7 +271,7 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
                 print(f"本页商品数量: {len(divs)}")
 
                 for div in divs:
-                    print(div.text)
+                    # print(div.text)
                     div.click()
                     tab.wait(1)
                     result = shop_detail(batch_id, server_task_id)
