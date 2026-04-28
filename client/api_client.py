@@ -21,7 +21,7 @@ class ClientAPI:
         }
         try:
             resp = self.session.post(
-                f"{self.server_url}/client/heartbeat",
+                f"{self.server_url}/api/client/heartbeat",
                 json=data, timeout=10
             )
             result = resp.json()
@@ -46,7 +46,7 @@ class ClientAPI:
         }
         try:
             self.session.post(
-                f"{self.server_url}/client/task_report",
+                f"{self.server_url}/api/client/task_report",
                 json=data, timeout=10
             )
         except Exception as e:
@@ -62,7 +62,7 @@ class ClientAPI:
         }
         try:
             self.session.post(
-                f"{self.server_url}/client/task_result",
+                f"{self.server_url}/api/client/task_result",
                 json=data, timeout=30
             )
             print(f"[结果上报] 成功，共 {len(products)} 个商品")

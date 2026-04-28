@@ -35,8 +35,7 @@ services:
     restart: unless-stopped
     networks:
       - crawler_network
-    volumes:
-      - ./server:/app
+
 
 volumes:
   mongodb_data:

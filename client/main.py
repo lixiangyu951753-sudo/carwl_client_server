@@ -88,7 +88,8 @@ def shop_detail(batch_id: str, server_task_id: str = None):
             "status": "crawling"
         })
 
-    file_name = tab_detail.title
+    product_title = tab_detail.title
+    file_name = product_title
     file_name = os.path.join(base_path, file_name)
     print(file_name)
     if not os.path.exists(file_name):
@@ -97,6 +98,7 @@ def shop_detail(batch_id: str, server_task_id: str = None):
     else:
         print(file_name + '文件夹已存在')
 
+    image_urls = []
     divs = tab_detail.ele(".od-scroller-list").eles("tag:div")
     print(len(divs))
     for div in divs:
@@ -108,6 +110,7 @@ def shop_detail(batch_id: str, server_task_id: str = None):
             img_url = match.group(1)
             img_url = img_url.replace("_b.jpg", "_.webp")
             print(img_url)
+            image_urls.append(img_url)
             if os.path.exists(os.path.join(file_name, os.path.basename(img_url))):
                 print('图片已存在，跳过下载')
             else:
@@ -132,6 +135,7 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         img_url = img.attr('src')
         print(img_url)
         img_name = os.path.basename(img_url)
+        image_urls.append(img_url)
 
         if index < len(imgs_list) - 3:
             if os.path.exists(os.path.join(file_name, img_name)):
@@ -149,15 +153,8 @@ def shop_detail(batch_id: str, server_task_id: str = None):
     except:
         lib_video = None
         print('未找到视频')
-        save_task(task_id, 'completed', file_name=file_name, url=product_url, batch_id=batch_id)
-        return {
-            "task_id": task_id,
-            "title": tab_detail.title,
-            "url": product_url,
-            "status": "completed",
-            "local_folder": file_name
-        }
 
+    video_url = None
     if lib_video:
         video_url = lib_video.attr('src')
         print(video_url)
@@ -172,22 +169,58 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         tab_detail.wait(1)
 
     tab_detail.save(path=file_name)
-    
-    # 在关闭标签页之前保存需要的信息
-    task_title = tab_detail.title
-    
-    tab_detail.close()
+
+    price_min = ""
+    price_max = ""
+    try:
+        price_elem = tab_detail.ele('.price', timeout=2)
+        if price_elem:
+            price_text = price_elem.text or ""
+            price_match = re.findall(r'[\d.]+', price_text)
+            if price_match:
+                prices = [float(p) for p in price_match]
+                price_min = str(min(prices))
+                price_max = str(max(prices))
+    except:
+        pass
+
+    supplier_name = ""
+    supplier_url = ""
+    try:
+        shop_elem = tab_detail.ele('x://*[@id="productTitle"]/div/div[1]/h1', timeout=2)
+        if shop_elem:
+            supplier_name = shop_elem.text or ""
+        shop_link = tab_detail.ele('x://a[@class="shop-name"]', timeout=2)
+        if shop_link:
+            supplier_url = shop_link.attr('href') or ""
+    except:
+        pass
+
+    description = ""
+    try:
+        desc_elem = tab_detail.ele('.html-description', timeout=2)
+        if desc_elem:
+            description = desc_elem.innerHTML[:5000] if desc_elem.innerHTML else ""
+    except:
+        pass
+
     print('关闭当前详情标签页')
+    tab_detail.close()
     save_task(task_id, 'completed', file_name=file_name, url=product_url, batch_id=batch_id)
     print("任务完成")
-    save_task(task_id, 'completed', url=product_url, batch_id=batch_id)
 
     return {
         "task_id": task_id,
-        "title": task_title,
+        "title": product_title,
         "url": product_url,
         "status": "completed",
-        "local_folder": file_name
+        "local_folder": file_name,
+        "images": image_urls,
+        "priceMin": price_min,
+        "priceMax": price_max,
+        "supplierName": supplier_name,
+        "supplierUrl": supplier_url,
+        "description": description[:1000] if description else ""
     }
 
 
@@ -240,12 +273,15 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
                         products.append(result)
                     completed_count += 1
                     tab.wait(3)
+                    
 
                     if server_task_id:
                         api.report_progress(server_task_id, "running", progress={
                             "current_page": page_num,
                             "current_product": completed_count
                         })
+                    #测试只采集一条
+                    break
 
                 next_btn = tab.ele('下一页')
                 if not next_btn:

@@ -71,6 +71,20 @@ def get_pending_task_for_client(client_id):
     )
     return task
 
+def get_pending_collector_task(client_id):
+    db = get_db()
+    task = db.collector_tasks.find_one_and_update(
+        {"status": "pending"},
+        {"$set": {
+            "status": "running",
+            "clientId": client_id,
+            "startedAt": datetime.now().isoformat(),
+            "updatedAt": datetime.now().isoformat()
+        }},
+        sort=[("createdAt", 1)]
+    )
+    return task
+
 def update_task_progress(task_id, status, progress=None, error=None):
     db = get_db()
     update_data = {

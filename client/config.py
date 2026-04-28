@@ -1,7 +1,7 @@
 import os
 
 CLIENT_ID = 'client_001'
-SERVER_URL = 'http://localhost:5001/api'
+SERVER_URL = 'http://localhost:5001'
 HEARTBEAT_INTERVAL = 5
 
 BASE_PATH = r'D:\client_001_output'
