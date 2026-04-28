@@ -181,8 +181,10 @@ def shop_detail(batch_id: str, server_task_id: str = None):
                 prices = [float(p) for p in price_match]
                 price_min = str(min(prices))
                 price_max = str(max(prices))
-    except:
-        pass
+    except Exception as e:
+        print(f"价格解析异常: {e}")
+    
+        print('未找到价格')
 
     supplier_name = ""
     supplier_url = ""
@@ -193,16 +195,20 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         shop_link = tab_detail.ele('x://a[@class="shop-name"]', timeout=2)
         if shop_link:
             supplier_url = shop_link.attr('href') or ""
-    except:
-        pass
+    except Exception as e:
+        print(f"供应商解析异常: {e}")
+    
+        print('未找到供应商')
 
     description = ""
     try:
         desc_elem = tab_detail.ele('.html-description', timeout=2)
         if desc_elem:
             description = desc_elem.innerHTML[:5000] if desc_elem.innerHTML else ""
-    except:
-        pass
+    except Exception as e:
+        print(f"描述解析异常: {e}")
+    
+        print('未找到描述')
 
     print('关闭当前详情标签页')
     tab_detail.close()
