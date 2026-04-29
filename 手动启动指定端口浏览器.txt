@@ -1,2 +1,4 @@
 start chrome --remote-debugging-port=9221
 start chrome --remote-debugging-port=9222
+
+docker命令:docker-compose up -d --build
