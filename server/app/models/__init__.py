@@ -43,10 +43,13 @@ def get_pending_task_for_client(client_id):
     return task
 
 
-def get_pending_collector_task(client_id):
+def get_pending_collector_task(client_id, client_type=None):
     db = get_db()
+    query = {"status": "pending"}
+    if client_type:
+        query["taskType"] = client_type
     task = db.collector_tasks.find_one_and_update(
-        {"status": "pending"},
+        query,
         {"$set": {
             "status": "running",
             "clientId": client_id,

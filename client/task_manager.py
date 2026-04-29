@@ -1,6 +1,7 @@
 import time
 import threading
 from api_client import ClientAPI
+import config
 
 
 class TaskManager:
@@ -55,7 +56,7 @@ class TaskManager:
 
         while not self._stop_event.is_set():
             status = "running" if self.running else "idle"
-            resp = self.api.heartbeat(status=status, current_task=self.current_task_id)
+            resp = self.api.heartbeat(status=status, current_task=self.current_task_id, client_type=config.CLIENT_TYPE)
 
             instruction = resp.get("instruction", "none")
 

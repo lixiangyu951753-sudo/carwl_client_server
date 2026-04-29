@@ -388,7 +388,7 @@ def create_task():
             "data": None
         }), 400
 
-    valid_task_types = ['single_url', 'batch_url', 'shop', 'keyword']
+    valid_task_types = ['single_url', 'batch_url', 'shop', 'keyword', 'shop_price', 'shop_image']
     if task_type not in valid_task_types:
         return jsonify({
             "code": "COLLECTOR_TASK_TYPE_INVALID",

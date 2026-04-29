@@ -18,6 +18,12 @@ def _collector_task_to_instruction(task):
     elif task_type == "shop":
         params["shop_url"] = task.get("shopUrl", "")
         params["instruction"] = "start_crawl"
+    elif task_type == "shop_price":
+        params["shop_url"] = task.get("shopUrl", "")
+        params["instruction"] = "start_crawl"
+    elif task_type == "shop_image":
+        params["shop_url"] = task.get("shopUrl", "")
+        params["instruction"] = "start_crawl"
     elif task_type == "keyword":
         params["keyword"] = task.get("keyword", "")
         params["instruction"] = "start_crawl"
@@ -47,13 +53,14 @@ def heartbeat():
     client_id = data.get('client_id')
     status = data.get('status', 'idle')
     current_task = data.get('current_task')
+    client_type = data.get('client_type')
 
     if not client_id:
         return jsonify({"code": 400, "message": "client_id is required"}), 400
 
     update_client_heartbeat(client_id, status, current_task)
 
-    collector_task = get_pending_collector_task(client_id)
+    collector_task = get_pending_collector_task(client_id, client_type)
     if collector_task:
         instruction_data = _collector_task_to_instruction(collector_task)
     else:

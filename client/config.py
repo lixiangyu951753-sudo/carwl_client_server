@@ -1,6 +1,7 @@
 import os
 
 CLIENT_ID = 'client_001'
+CLIENT_TYPE = 'shop_image'
 SERVER_URL = 'http://localhost:5001'
 HEARTBEAT_INTERVAL = 5
 

@@ -3,6 +3,9 @@
 # 客户端ID，确保唯一
 CLIENT_ID = "client-002"
 
+# 客户端类型，用于任务分发匹配（与 taskType 对应）
+CLIENT_TYPE = "shop_price"
+
 # 服务器地址
 SERVER_URL = "http://localhost:5001/api"
 

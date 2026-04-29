@@ -23,7 +23,7 @@ def print_response(label: str, resp: requests.Response):
 def create_shop_task(shop_url: str, source_id: str = "src_1688_default", max_items: int = 200):
     """店铺采集任务"""
     data = {
-        "taskType": "shop",
+        "taskType": "shop_price",
         "sourceId": source_id,
         "shopUrl": shop_url,
         "options": {

@@ -12,11 +12,12 @@ class ClientAPI:
             'X-Client-ID': client_id
         })
 
-    def heartbeat(self, status: str = 'idle', current_task: str = None) -> dict:
+    def heartbeat(self, status: str = 'idle', current_task: str = None, client_type: str = None) -> dict:
         data = {
             "client_id": self.client_id,
             "status": status,
             "current_task": current_task,
+            "client_type": client_type,
             "timestamp": datetime.now().isoformat()
         }
         try:
