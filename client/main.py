@@ -6,13 +6,15 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 import requests
-from DrissionPage import ChromiumPage
+from DrissionPage import ChromiumPage,ChromiumOptions
 
 from api_client import ClientAPI
 from task_manager import TaskManager
 import config
 
-browser = ChromiumPage()
+co = ChromiumOptions()
+co.set_local_port(9221)
+browser = ChromiumPage(addr_or_opts=co)
 base_path = config.BASE_PATH
 tasks_file = os.path.join(base_path, 'tasks.json')
 batch_file = os.path.join(base_path, 'batch.json')

@@ -8,6 +8,8 @@ from DrissionPage import Chromium, ChromiumOptions
 from api_client import ClientAPI
 from task_manager import TaskManager
 import config
+from pathlib import Path
+
 
 # 确保输出目录存在
 if not os.path.exists(config.BASE_PATH):
@@ -65,8 +67,10 @@ def is_task_completed(task_id: str) -> bool:
 
 
 def get_latest_1688_file():
-    """读取 base_path 下商品列表-1688 开头最新的文件"""
-    pattern = os.path.join(config.BASE_PATH, '商品列表-1688*.xlsx')
+    """读取系统下载目录下商品列表-1688 开头最新的文件"""
+    base_path = str(Path.home() / "Downloads")
+    
+    pattern = os.path.join(base_path, '商品列表-1688*.xlsx')
     files = glob.glob(pattern)
     
     if not files:
