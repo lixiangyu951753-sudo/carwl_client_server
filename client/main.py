@@ -233,6 +233,14 @@ def shop_detail(batch_id: str, server_task_id: str = None):
 
 
 
+def check_task_canceled():
+    """检查任务是否被取消"""
+    if not manager.running:
+        print("[爬虫] 任务被取消，准备退出")
+        return True
+    return False
+
+
 def shop_list(server_task_id: str = None, shop_url: str = None):
     batch_id = gen_batch_id()
     print(f"开始新批次任务: {batch_id}, 店铺URL: {shop_url}")
@@ -249,6 +257,14 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
             products = []
 
             while True:
+                if check_task_canceled():
+                    save_batch(batch_id, 'canceled', product_count=completed_count)
+                    return {
+                        "batch_id": batch_id,
+                        "products": products,
+                        "status": "canceled"
+                    }
+
                 print(f"\n===== 第 {page_num} 页 =====")
                 #判断是否在目标页
                 categorys = tab.eles('x://div[@class="first-category"]')
@@ -273,6 +289,14 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
                 print(f"本页商品数量: {len(divs)}")
 
                 for div in divs:
+                    if check_task_canceled():
+                        save_batch(batch_id, 'canceled', product_count=completed_count)
+                        return {
+                            "batch_id": batch_id,
+                            "products": products,
+                            "status": "canceled"
+                        }
+
                     # print(div.text)
                     div.click()
                     tab.wait(1)

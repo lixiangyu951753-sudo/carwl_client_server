@@ -227,6 +227,14 @@ def export_1688_products(browser, shop_url: str):
     tab.wait(5)
 
 
+def check_task_canceled():
+    """检查任务是否被取消"""
+    if not manager.running:
+        print("[爬虫] 任务被取消，准备退出")
+        return True
+    return False
+
+
 def shop_list(server_task_id: str = None, shop_url: str = None):
     """爬取店铺商品列表（使用 1688 插件导出 Excel 方式）"""
     batch_id = gen_batch_id()
@@ -245,6 +253,14 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
         co.set_local_port(9222)
         browser = Chromium(co)
         
+        if check_task_canceled():
+            save_batch(batch_id, 'canceled')
+            return {
+                "batch_id": batch_id,
+                "products": [],
+                "status": "canceled"
+            }
+        
         if server_task_id:
             api.report_progress(server_task_id, "running", progress={
                 "status": "exporting_excel",
@@ -253,6 +269,14 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
         
         # 使用插件导出 Excel
         export_1688_products(browser, shop_url)
+        
+        if check_task_canceled():
+            save_batch(batch_id, 'canceled')
+            return {
+                "batch_id": batch_id,
+                "products": [],
+                "status": "canceled"
+            }
         
         if server_task_id:
             api.report_progress(server_task_id, "running", progress={
@@ -268,6 +292,14 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
         
         # 提取商品数据
         product_data_list = extract_product_data(latest_file)
+        
+        if check_task_canceled():
+            save_batch(batch_id, 'canceled')
+            return {
+                "batch_id": batch_id,
+                "products": [],
+                "status": "canceled"
+            }
         
         # 转换为标准格式
         products = []
