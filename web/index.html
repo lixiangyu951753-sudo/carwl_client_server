@@ -286,6 +286,7 @@
             <button class="tab-btn active" onclick="switchTab('tasks')">任务管理</button>
             <button class="tab-btn" onclick="switchTab('sources')">采集源管理</button>
             <button class="tab-btn" onclick="switchTab('clients')">客户端监控</button>
+            <button class="tab-btn" onclick="switchTab('items')">采集结果</button>
             <button class="tab-btn" onclick="switchTab('create-task')">创建任务</button>
             <button class="tab-btn" onclick="switchTab('create-source')">创建采集源</button>
         </div>
@@ -371,6 +372,43 @@
                         <tr><td colspan="6" class="empty-state">加载中...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+        
+        <!-- 采集结果 -->
+        <div id="tab-items" class="tab-content">
+            <div class="card">
+                <div class="card-title">采集结果</div>
+                <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="item-filter-taskid" placeholder="任务ID" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; width: 200px;">
+                    <input type="text" id="item-filter-keyword" placeholder="关键词搜索" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd; width: 200px;">
+                    <select id="item-filter-platform" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                        <option value="">全部平台</option>
+                        <option value="1688">1688</option>
+                        <option value="jd">京东</option>
+                        <option value="pdd">拼多多</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="loadItems()">搜索</button>
+                    <button class="btn btn-sm" onclick="clearItemFilters()" style="background: #f0f0f0;">清空</button>
+                </div>
+                <table class="data-table" id="items-table">
+                    <thead>
+                        <tr>
+                            <th>商品ID</th>
+                            <th>标题</th>
+                            <th>平台</th>
+                            <th>价格</th>
+                            <th>供应商</th>
+                            <th>来源链接</th>
+                            <th>采集时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-tbody">
+                        <tr><td colspan="8" class="empty-state">加载中...</td></tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="items-pagination"></div>
             </div>
         </div>
         
@@ -510,6 +548,7 @@
             if (tabName === 'tasks') loadTasks();
             if (tabName === 'sources') loadSources();
             if (tabName === 'clients') loadClients();
+            if (tabName === 'items') loadItems();
         }
         
         // 通用请求
@@ -629,6 +668,80 @@
                     <td>${new Date(client.last_heartbeat).toLocaleString()}</td>
                 </tr>
             `).join('');
+        }
+        
+        // 加载采集结果
+        async function loadItems(page = 1) {
+            const taskId = document.getElementById('item-filter-taskid').value;
+            const keyword = document.getElementById('item-filter-keyword').value;
+            const platform = document.getElementById('item-filter-platform').value;
+            
+            let url = `${API_BASE}/items?page=${page}&pageSize=20`;
+            if (taskId) url += `&taskId=${taskId}`;
+            if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+            if (platform) url += `&platform=${platform}`;
+            
+            const data = await apiRequest(url);
+            const tbody = document.getElementById('items-tbody');
+            
+            if (data.code !== 'OK' || !data.data.items.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无数据</td></tr>';
+                document.getElementById('items-pagination').innerHTML = '';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.items.map(item => `
+                <tr>
+                    <td>${item.itemId || '-'}</td>
+                    <td title="${item.title || ''}">${(item.title || '').substring(0, 30)}${(item.title || '').length > 30 ? '...' : ''}</td>
+                    <td>${item.platform || '-'}</td>
+                    <td>${item.priceMin || item.price || '-'}</td>
+                    <td>${item.supplierName || item.shopName || '-'}</td>
+                    <td><a href="${item.sourceUrl || '#'}" target="_blank" style="color: #667eea;">${(item.sourceUrl || '').substring(0, 30)}...</a></td>
+                    <td>${new Date(item.createdAt).toLocaleString()}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="viewItemDetail('${item.itemId}')">详情</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            const totalPages = Math.ceil(data.data.total / 20);
+            document.getElementById('items-pagination').innerHTML = Array.from({length: totalPages}, (_, i) => `
+                <button class="page-btn ${i+1 === page ? 'active' : ''}" onclick="loadItems(${i+1})">${i+1}</button>
+            `).join('');
+        }
+        
+        // 清空采集结果筛选
+        function clearItemFilters() {
+            document.getElementById('item-filter-taskid').value = '';
+            document.getElementById('item-filter-keyword').value = '';
+            document.getElementById('item-filter-platform').value = '';
+            loadItems();
+        }
+        
+        // 查看商品详情
+        async function viewItemDetail(itemId) {
+            const data = await apiRequest(`${API_BASE}/items/detail?itemId=${itemId}`);
+            if (data.code === 'OK') {
+                const item = data.data;
+                const detailHtml = `
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <p><strong>商品ID:</strong> ${item.itemId}</p>
+                        <p><strong>标题:</strong> ${item.title}</p>
+                        <p><strong>平台:</strong> ${item.platform}</p>
+                        <p><strong>价格:</strong> ${item.priceMin || item.price || '-'} ~ ${item.priceMax || '-'}</p>
+                        <p><strong>供应商:</strong> ${item.supplierName || '-'}</p>
+                        <p><strong>店铺:</strong> ${item.shopName || '-'}</p>
+                        <p><strong>来源链接:</strong> <a href="${item.sourceUrl}" target="_blank">${item.sourceUrl}</a></p>
+                        <p><strong>主图:</strong> ${item.mainImageUrl ? `<img src="${item.mainImageUrl}" style="max-width: 200px;">` : '-'}</p>
+                        <p><strong>描述:</strong> ${item.description || '-'}</p>
+                        <p><strong>采集时间:</strong> ${new Date(item.createdAt).toLocaleString()}</p>
+                    </div>
+                `;
+                alert(detailHtml);
+            } else {
+                alert('获取详情失败：' + data.message);
+            }
         }
         
         // 创建任务
