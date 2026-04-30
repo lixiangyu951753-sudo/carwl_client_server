@@ -52,19 +52,27 @@ def get_pending_collector_task(client_id, client_type=None, client_capabilities=
         platform = client_capabilities.get("platform")
         capabilities = client_capabilities.get("capabilities", [])
         
+        conditions = []
+        
+        # 平台匹配：任务的platform必须等于客户端的platform，或者任务未设置platform
         if platform:
-            query["$or"] = [
+            platform_conditions = [
                 {"platform": platform},
                 {"platform": {"$exists": False}},
                 {"platform": ""}
             ]
+            conditions.append({"$or": platform_conditions})
         
+        # 能力匹配：任务的capability必须在客户端的能力列表中
         if capabilities:
-            query["$or"] = query.get("$or", []) + [
-                {"capability": {"$in": capabilities}},
-                {"capability": {"$exists": False}},
-                {"capability": ""}
+            capability_conditions = [
+                {"capability": {"$in": capabilities}}
             ]
+            # 如果客户端指定了能力，任务必须有对应的capability才能匹配
+            conditions.append({"$or": capability_conditions})
+        
+        if conditions:
+            query["$and"] = conditions
     elif client_type:
         # 兼容旧版：client_type 直接匹配 taskType
         query["taskType"] = client_type

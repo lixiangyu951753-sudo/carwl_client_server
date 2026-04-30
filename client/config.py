@@ -9,7 +9,7 @@ CLIENT_CAPABILITIES = {
     "capabilities": ["image"]
 }
 
-SERVER_URL = 'http://localhost:5001'
+SERVER_URL = 'http://localhost:5001/api'
 HEARTBEAT_INTERVAL = 5
 HEARTBEAT_TIMEOUT = 10
 HEARTBEAT_MAX_RETRIES = 3
