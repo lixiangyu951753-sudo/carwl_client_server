@@ -531,9 +531,8 @@
         
         // 加载统计数据
         async function loadStats() {
-            const tasksData = await apiRequest(`${API_BASE}/tasks?page=1&pageSize=1`);
+            const tasksData = await apiRequest(`${API_BASE}/tasks?page=1&pageSize=100`);
             if (tasksData.code === 'OK') {
-                // 这里简化处理，实际需要按状态统计
                 const tasks = tasksData.data.items || [];
                 document.getElementById('stat-pending').textContent = tasks.filter(t => t.status === 'pending').length;
                 document.getElementById('stat-running').textContent = tasks.filter(t => t.status === 'running').length;
@@ -541,7 +540,6 @@
                 document.getElementById('stat-failed').textContent = tasks.filter(t => t.status === 'failed').length;
             }
             
-            // 加载客户端数
             const clientsData = await apiRequest(`${API_BASE}/clients`);
             if (clientsData.code === 'OK') {
                 document.getElementById('stat-clients').textContent = (clientsData.data || []).length;
