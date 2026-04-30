@@ -59,7 +59,7 @@ def heartbeat():
     if not client_id:
         return jsonify({"code": 400, "message": "client_id is required"}), 400
 
-    update_client_heartbeat(client_id, status, current_task)
+    update_client_heartbeat(client_id, status, current_task, client_type=client_type, client_capabilities=client_capabilities)
 
     collector_task = get_pending_collector_task(client_id, client_type, client_capabilities)
     if collector_task:

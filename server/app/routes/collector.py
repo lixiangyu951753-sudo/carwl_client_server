@@ -6,6 +6,30 @@ from datetime import datetime
 bp = Blueprint('collector', __name__, url_prefix='/api/v1')
 
 
+# ============ 客户端接口 ============
+
+@bp.route('/clients', methods=['GET'])
+def list_clients():
+    from app import db
+    from datetime import datetime, timedelta
+
+    # 查询最近30秒内有心跳的客户端（在线）
+    thirty_seconds_ago = datetime.now() - timedelta(seconds=30)
+    clients = list(db.clients.find(
+        {"last_heartbeat": {"$gte": thirty_seconds_ago}},
+        {"_id": 0}
+    ).sort("last_heartbeat", -1))
+
+    return jsonify({
+        "code": "OK",
+        "message": "success",
+        "data": clients,
+        "traceId": request.headers.get('X-Trace-Id', ''),
+        "requestId": request.headers.get('X-Request-Id', ''),
+        "timestamp": datetime.now().isoformat()
+    })
+
+
 # ============ 健康检查 ============
 
 @bp.route('/health', methods=['GET'])

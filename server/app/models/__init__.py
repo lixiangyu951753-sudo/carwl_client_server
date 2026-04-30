@@ -11,7 +11,7 @@ def get_db():
     return db
 
 
-def update_client_heartbeat(client_id, status="online", current_task=None, ip_address=None):
+def update_client_heartbeat(client_id, status="online", current_task=None, ip_address=None, client_type=None, client_capabilities=None):
     db = get_db()
     update_data = {
         "status": status if status != "idle" else "online",
@@ -22,6 +22,11 @@ def update_client_heartbeat(client_id, status="online", current_task=None, ip_ad
         update_data["current_task"] = current_task
     if ip_address:
         update_data["ip_address"] = ip_address
+    if client_type:
+        update_data["client_type"] = client_type
+    if client_capabilities:
+        update_data["platform"] = client_capabilities.get("platform")
+        update_data["capabilities"] = client_capabilities.get("capabilities", [])
 
     if status == "running":
         update_data["status"] = "busy"
