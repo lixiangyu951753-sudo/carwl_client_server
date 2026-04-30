@@ -19,7 +19,7 @@ base_path = config.BASE_PATH
 tasks_file = os.path.join(base_path, 'tasks.json')
 batch_file = os.path.join(base_path, 'batch.json')
 
-api = ClientAPI(config.CLIENT_ID, config.SERVER_URL)
+api = ClientAPI(config.CLIENT_ID, config.SERVER_URL, config.CLIENT_CAPABILITIES)
 manager = TaskManager(api, config.HEARTBEAT_INTERVAL)
 
 def gen_batch_id() -> str:

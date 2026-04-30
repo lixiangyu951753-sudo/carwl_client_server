@@ -54,13 +54,14 @@ def heartbeat():
     status = data.get('status', 'idle')
     current_task = data.get('current_task')
     client_type = data.get('client_type')
+    client_capabilities = data.get('client_capabilities')
 
     if not client_id:
         return jsonify({"code": 400, "message": "client_id is required"}), 400
 
     update_client_heartbeat(client_id, status, current_task)
 
-    collector_task = get_pending_collector_task(client_id, client_type)
+    collector_task = get_pending_collector_task(client_id, client_type, client_capabilities)
     if collector_task:
         instruction_data = _collector_task_to_instruction(collector_task)
     else:
@@ -68,7 +69,7 @@ def heartbeat():
         if task:
             instruction_data = {
                 "instruction": task.get("instruction", "start_crawl"),
-                "task_id": task["task_id"],
+                "task_id": task.get("task_id"),
                 "params": task.get("params", {}),
                 "_source": "task"
             }

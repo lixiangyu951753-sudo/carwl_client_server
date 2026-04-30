@@ -1,16 +1,21 @@
-# 客户端配置
+import os
 
-# 客户端ID，确保唯一
-CLIENT_ID = "client-002"
+CLIENT_ID = 'client_1688_price_01'
 
-# 客户端类型，用于任务分发匹配（与 taskType 对应）
-CLIENT_TYPE = "shop_price"
+CLIENT_TYPE = 'shop_price'
 
-# 服务器地址
-SERVER_URL = "http://localhost:5001/api"
+CLIENT_CAPABILITIES = {
+    "platform": "1688",
+    "capabilities": ["price"]
+}
 
-# 心跳间隔（秒）
+SERVER_URL = 'http://localhost:5001/api'
 HEARTBEAT_INTERVAL = 5
+HEARTBEAT_TIMEOUT = 10
+HEARTBEAT_MAX_RETRIES = 3
 
-# 基础路径，用于保存爬取结果
-BASE_PATH = "D:\\client_002_output"
+BASE_PATH = r'D:\client_002_output'
+
+TASK_ACCEPT_TIMEOUT = 30
+TASK_MAX_RETRIES = 3
+TASK_RETRY_DELAY = 5

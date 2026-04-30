@@ -380,6 +380,8 @@ def create_task():
     idempotency_key = data.get('idempotencyKey')
     task_type = data.get('taskType')
     source_id = data.get('sourceId')
+    platform = data.get('platform')
+    capability = data.get('capability')
 
     if not task_type:
         return jsonify({
@@ -410,6 +412,12 @@ def create_task():
                 "message": "采集源已停用",
                 "data": None
             }), 400
+        
+        # 自动从采集源继承 platform 和 capability
+        if not platform and source.get("platform"):
+            data["platform"] = source.get("platform")
+        if not capability and source.get("capability"):
+            data["capability"] = source.get("capability")
 
     if idempotency_key:
         existing = db.collector_idempotency_keys.find_one({"idempotencyKey": idempotency_key})

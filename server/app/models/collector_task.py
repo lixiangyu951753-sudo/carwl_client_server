@@ -15,6 +15,8 @@ def create_collector_task(data: dict) -> dict:
         "taskId": task_id,
         "taskNo": task_no,
         "sourceId": data.get("sourceId"),
+        "platform": data.get("platform", ""),
+        "capability": data.get("capability", ""),
         "taskType": task_type,
         "shopUrl": data.get("shopUrl", ""),
         "targetUrls": data.get("targetUrls", []),

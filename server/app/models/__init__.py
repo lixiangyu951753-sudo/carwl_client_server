@@ -43,11 +43,32 @@ def get_pending_task_for_client(client_id):
     return task
 
 
-def get_pending_collector_task(client_id, client_type=None):
+def get_pending_collector_task(client_id, client_type=None, client_capabilities=None):
     db = get_db()
     query = {"status": "pending"}
-    if client_type:
+    
+    # client_capabilities 格式: {"platform": "1688", "capabilities": ["price", "image"]}
+    if client_capabilities:
+        platform = client_capabilities.get("platform")
+        capabilities = client_capabilities.get("capabilities", [])
+        
+        if platform:
+            query["$or"] = [
+                {"platform": platform},
+                {"platform": {"$exists": False}},
+                {"platform": ""}
+            ]
+        
+        if capabilities:
+            query["$or"] = query.get("$or", []) + [
+                {"capability": {"$in": capabilities}},
+                {"capability": {"$exists": False}},
+                {"capability": ""}
+            ]
+    elif client_type:
+        # 兼容旧版：client_type 直接匹配 taskType
         query["taskType"] = client_type
+    
     task = db.collector_tasks.find_one_and_update(
         query,
         {"$set": {

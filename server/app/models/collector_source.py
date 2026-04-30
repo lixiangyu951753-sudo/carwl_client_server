@@ -13,6 +13,7 @@ def create_collector_source(data: dict) -> dict:
         "sourceCode": data.get("sourceCode"),
         "sourceName": data.get("sourceName"),
         "platform": data.get("platform"),
+        "capability": data.get("capability", ""),
         "sourceType": data.get("sourceType", "url"),
         "entryUrl": data.get("entryUrl"),
         "parserCode": data.get("parserCode"),

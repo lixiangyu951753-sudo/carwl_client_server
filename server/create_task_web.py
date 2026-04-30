@@ -20,11 +20,29 @@ def print_response(label: str, resp: requests.Response):
     print(f"{'=' * 60}")
 
 
-def create_shop_task(shop_url: str, source_id: str = "src_1688_default", max_items: int = 200):
+def create_source(source_code: str, source_name: str, platform: str, capability: str = "", source_type: str = "url", entry_url: str = None):
+    """创建采集源"""
+    data = {
+        "sourceCode": source_code,
+        "sourceName": source_name,
+        "platform": platform,
+        "capability": capability,
+        "sourceType": source_type,
+    }
+    if entry_url:
+        data["entryUrl"] = entry_url
+    resp = requests.post(f"{BASE_URL}/sources/create", json=data, headers=HEADERS)
+    print_response("创建采集源", resp)
+    return resp.json()
+
+
+def create_shop_task(shop_url: str, source_id: str = "", platform: str = "", capability: str = "", max_items: int = 200):
     """店铺采集任务"""
     data = {
         "taskType": "shop_price",
         "sourceId": source_id,
+        "platform": platform,
+        "capability": capability,
         "shopUrl": shop_url,
         "options": {
             "maxItems": max_items,
@@ -41,11 +59,13 @@ def create_shop_task(shop_url: str, source_id: str = "src_1688_default", max_ite
     return resp.json()
 
 
-def create_single_url_task(url: str, source_id: str = "src_1688_default"):
+def create_single_url_task(url: str, source_id: str = "", platform: str = "", capability: str = ""):
     """单链接采集任务"""
     data = {
         "taskType": "single_url",
         "sourceId": source_id,
+        "platform": platform,
+        "capability": capability,
         "targetUrls": [url],
         "options": {
             "maxItems": 1,
@@ -60,11 +80,13 @@ def create_single_url_task(url: str, source_id: str = "src_1688_default"):
     return resp.json()
 
 
-def create_batch_url_task(urls: list, source_id: str = "src_1688_default", max_items: int = 100):
+def create_batch_url_task(urls: list, source_id: str = "", platform: str = "", capability: str = "", max_items: int = 100):
     """批量链接采集任务"""
     data = {
         "taskType": "batch_url",
         "sourceId": source_id,
+        "platform": platform,
+        "capability": capability,
         "targetUrls": urls,
         "options": {
             "maxItems": max_items,
@@ -80,11 +102,13 @@ def create_batch_url_task(urls: list, source_id: str = "src_1688_default", max_i
     return resp.json()
 
 
-def create_keyword_task(keyword: str, source_id: str = "src_1688_default", max_items: int = 100):
+def create_keyword_task(keyword: str, source_id: str = "", platform: str = "", capability: str = "", max_items: int = 100):
     """关键词采集任务"""
     data = {
         "taskType": "keyword",
         "sourceId": source_id,
+        "platform": platform,
+        "capability": capability,
         "keyword": keyword,
         "options": {
             "maxItems": max_items,
@@ -170,67 +194,99 @@ def list_sources(keyword: str = None, platform: str = None, status: str = None):
 
 if __name__ == "__main__":
     print("\n" + "#" * 60)
-    print("# 运营工作台 - 创建采集任务测试脚本")
+    print("# 运营工作台 - 多客户端采集任务测试脚本")
     print("#" * 60)
 
-    print("\n--- 1. 查看可用的采集源 ---")
+    print("\n--- 1. 查看已有的采集源 ---")
     sources = list_sources()
 
-    # print("\n--- 2. 预解析一个商品链接 ---")
-    # preview_url("https://detail.1688.com/offer/123456789.html")
+    print("\n--- 2. 创建多平台采集源 ---")
+    
+    # 1688 价格采集源
+    # source_1688_price = create_source(
+    #     source_code="src_1688_price",
+    #     source_name="1688价格采集源",
+    #     platform="1688",
+    #     capability="price",
+    #     entry_url="https://www.1688.com"
+    # )
+    
+    # # 1688 图片采集源
+    # source_1688_image = create_source(
+    #     source_code="src_1688_image",
+    #     source_name="1688图片采集源",
+    #     platform="1688",
+    #     capability="image",
+    #     entry_url="https://www.1688.com"
+    # )
+    
+    # # 京东价格采集源
+    # source_jd_price = create_source(
+    #     source_code="src_jd_price",
+    #     source_name="京东价格采集源",
+    #     platform="jd",
+    #     capability="price",
+    #     entry_url="https://www.jd.com"
+    # )
+    
+    # # PDD采集源
+    # source_pdd = create_source(
+    #     source_code="src_pdd",
+    #     source_name="拼多多采集源",
+    #     platform="pdd",
+    #     capability="price",
+    #     entry_url="https://www.pinduoduo.com"
+    # )
 
-    print("\n--- 3. 创建店铺采集任务 ---")
-    shop_result = create_shop_task(
+    # print("\n--- 3. 创建不同平台的采集任务 ---")
+    
+    # # 1688 价格采集任务
+    task_1688_price = create_shop_task(
         shop_url="https://xindeyi.1688.com/page/offerlist.htm",
+        source_id='src_9deb2db5',
+        platform="1688",
+        capability="image",
         max_items=200
     )
-    shop_task_id = shop_result["data"]["taskId"]
-
-    # print("\n--- 4. 创建单链接采集任务 ---")
-    # single_result = create_single_url_task(
-    #     url="https://detail.1688.com/offer/987654321.html"
-    # )
-    # single_task_id = single_result["data"]["taskId"]
-
-    # print("\n--- 5. 创建批量链接采集任务 ---")
-    # batch_result = create_batch_url_task(
-    #     urls=[
-    #         "https://detail.1688.com/offer/111111.html",
-    #         "https://detail.1688.com/offer/222222.html",
-    #         "https://detail.1688.com/offer/333333.html"
-    #     ],
-    #     max_items=50
-    # )
-    # batch_task_id = batch_result["data"]["taskId"]
-
-    # print("\n--- 6. 创建关键词采集任务 ---")
-    # keyword_result = create_keyword_task(
-    #     keyword="moissanite necklace",
-    #     max_items=100
-    # )
-    # keyword_task_id = keyword_result["data"]["taskId"]
-
-    print("\n--- 7. 查询所有任务列表 ---")
-    list_tasks()
-
-    print("\n--- 8. 查询 pending 状态的任务 ---")
-    list_tasks(status="pending")
-
-    # print("\n--- 9. 查询店铺采集任务详情 ---")
-    # query_task_detail(shop_task_id)
-
-    # print("\n--- 10. 取消关键词采集任务 ---")
-    # cancel_task(keyword_task_id)
-
-    # print("\n--- 11. 查看取消后的任务列表 ---")
-    # list_tasks(status="canceled")
-
-    print("\n" + "#" * 60)
-    print("# 测试完成！")
-    print("#" * 60)
-
-    # shop_result = create_shop_task(
+    
+    # # 1688 图片采集任务
+    # task_1688_image = create_shop_task(
     #     shop_url="https://xindeyi.1688.com/page/offerlist.htm",
+    #     source_id=source_1688_image.get("data", {}).get("sourceId", ""),
+    #     platform="1688",
+    #     capability="image",
     #     max_items=200
     # )
-    # print(shop_result)
+    
+    # # 京东价格采集任务
+    # task_jd_price = create_keyword_task(
+    #     keyword="手机",
+    #     source_id=source_jd_price.get("data", {}).get("sourceId", ""),
+    #     platform="jd",
+    #     capability="price",
+    #     max_items=100
+    # )
+    
+    # # PDD采集任务
+    # task_pdd = create_keyword_task(
+    #     keyword="衣服",
+    #     source_id=source_pdd.get("data", {}).get("sourceId", ""),
+    #     platform="pdd",
+    #     capability="price",
+    #     max_items=100
+    # )
+
+    # print("\n--- 4. 查询所有任务列表 ---")
+    # list_tasks()
+
+    # print("\n--- 5. 查询 pending 状态的任务 ---")
+    # list_tasks(status="pending")
+
+    # print("\n" + "#" * 60)
+    # print("# 测试完成！")
+    # print("# 客户端心跳请求示例：")
+    # print("# 1688价格客户端: {'client_id': 'client_1688_price_01', 'client_capabilities': {'platform': '1688', 'capabilities': ['price']}}")
+    # print("# 1688图片客户端: {'client_id': 'client_1688_image_01', 'client_capabilities': {'platform': '1688', 'capabilities': ['image']}}")
+    # print("# 京东价格客户端: {'client_id': 'client_jd_price_01', 'client_capabilities': {'platform': 'jd', 'capabilities': ['price']}}")
+    # print("# PDD客户端: {'client_id': 'client_pdd_01', 'client_capabilities': {'platform': 'pdd', 'capabilities': ['price']}}")
+    # print("#" * 60)

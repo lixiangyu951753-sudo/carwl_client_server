@@ -1,11 +1,24 @@
 import os
 
-CLIENT_ID = 'client_001'
+CLIENT_ID = 'client_1688_image_01'
+
 CLIENT_TYPE = 'shop_image'
+
+CLIENT_CAPABILITIES = {
+    "platform": "1688",
+    "capabilities": ["image"]
+}
+
 SERVER_URL = 'http://localhost:5001'
 HEARTBEAT_INTERVAL = 5
+HEARTBEAT_TIMEOUT = 10
+HEARTBEAT_MAX_RETRIES = 3
 
 BASE_PATH = r'D:\client_001_output'
+
+TASK_ACCEPT_TIMEOUT = 30
+TASK_MAX_RETRIES = 3
+TASK_RETRY_DELAY = 5
 
 OSS_ACCESS_KEY_ID = os.environ.get('OSS_ACCESS_KEY_ID', '')
 OSS_ACCESS_KEY_SECRET = os.environ.get('OSS_ACCESS_KEY_SECRET', '')
