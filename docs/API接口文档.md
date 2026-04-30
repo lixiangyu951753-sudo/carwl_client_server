@@ -36,7 +36,28 @@
   | client_id | string | 是 | - | 客户端唯一标识 |
   | status | string | 否 | `idle` | 客户端状态: idle, busy, running |
   | current_task | string | 否 | - | 当前执行的任务ID |
+  | client_type | string | 否 | - | 客户端类型（兼容旧版），如: shop_price, shop_image |
+  | client_capabilities | object | 否 | - | 客户端平台与能力标签，用于精确任务分配 |
   | timestamp | string | 否 | - | 时间戳 (ISO 8601 格式) |
+
+- **client_capabilities 字段说明**:
+  | 字段 | 类型 | 说明 |
+  |------|------|------|
+  | platform | string | 平台标识，如: 1688, jd, pdd |
+  | capabilities | array | 能力列表，如: ["price"], ["image"], ["price", "image"] |
+
+- **请求示例**:
+  ```json
+  {
+    "client_id": "client_1688_price_01",
+    "status": "idle",
+    "client_type": "shop_price",
+    "client_capabilities": {
+      "platform": "1688",
+      "capabilities": ["price"]
+    }
+  }
+  ```
 
 - **响应**:
   ```json
@@ -53,6 +74,13 @@
     }
   }
   ```
+
+- **任务分配规则**:
+  | 客户端配置 | 匹配的任务 |
+  |-----------|-----------|
+  | `client_capabilities.platform=1688, capabilities=["price"]` | platform=1688 且 capability=price 的任务 |
+  | `client_capabilities.platform=1688, capabilities=["image"]` | platform=1688 且 capability=image 的任务 |
+  | 仅 client_type=shop_price（旧版） | taskType=shop_price 的任务 |
 
 - **指令说明**:
   | instruction | 说明 |
@@ -148,6 +176,91 @@
 
 管理接口用于管理员管理任务和监控客户端。
 
+---
+
+## 三、采集源管理接口 (`/api/v1`)
+
+采集源是任务的模板，定义了平台、能力等基础配置。创建任务时可指定 sourceId 自动继承这些配置。
+
+### 3.1 创建采集源
+
+- **URL**: `POST /api/v1/sources/create`
+- **请求体**:
+  | 字段 | 类型 | 必填 | 说明 |
+  |------|------|------|------|
+  | sourceCode | string | 是 | 采集源编码，如: src_1688_price |
+  | sourceName | string | 是 | 采集源名称，如: 1688价格采集源 |
+  | platform | string | 是 | 平台标识，如: 1688, jd, pdd |
+  | capability | string | 否 | 能力标签，如: price, image |
+  | sourceType | string | 否 | 源类型，默认: url |
+  | entryUrl | string | 否 | 入口URL |
+
+- **请求示例**:
+  ```json
+  {
+    "sourceCode": "src_1688_price",
+    "sourceName": "1688价格采集源",
+    "platform": "1688",
+    "capability": "price",
+    "entryUrl": "https://www.1688.com"
+  }
+  ```
+
+- **响应**:
+  ```json
+  {
+    "code": "OK",
+    "message": "success",
+    "data": {
+      "sourceId": "src_9deb2db5",
+      "sourceCode": "src_1688_price",
+      "status": "enabled"
+    }
+  }
+  ```
+
+### 3.2 查询采集源列表
+
+- **URL**: `GET /api/v1/sources`
+- **查询参数**:
+  | 参数 | 类型 | 必填 | 说明 |
+  |------|------|------|------|
+  | keyword | string | 否 | 搜索关键词（匹配名称或编码） |
+  | platform | string | 否 | 按平台筛选 |
+  | status | string | 否 | 按状态筛选: enabled, disabled |
+  | page | int | 否 | 页码，默认1 |
+  | pageSize | int | 否 | 每页数量，默认20 |
+
+- **响应**:
+  ```json
+  {
+    "code": "OK",
+    "message": "success",
+    "data": {
+      "items": [
+        {
+          "sourceId": "src_9deb2db5",
+          "sourceCode": "src_1688_price",
+          "sourceName": "1688价格采集源",
+          "platform": "1688",
+          "capability": "price",
+          "sourceType": "url",
+          "status": "enabled",
+          "createdAt": "2026-04-30T10:00:00",
+          "updatedAt": "2026-04-30T10:00:00"
+        }
+      ],
+      "page": 1,
+      "pageSize": 20,
+      "total": 1
+    }
+  }
+  ```
+
+---
+
+## 四、采集任务接口 (`/api/v1`)
+
 ### 2.1 获取任务列表
 
 获取所有任务，支持分页和状态过滤。
@@ -195,33 +308,88 @@
 
 创建新的爬虫任务。
 
-- **URL**: `POST /api/tasks`
+- **URL**: `POST /api/v1/tasks/create`
 - **请求体**:
   | 字段 | 类型 | 必填 | 默认值 | 说明 |
   |------|------|------|--------|------|
-  | instruction | string | 否 | `start_crawl` | 任务指令 |
-  | params | object | 否 | `{}` | 任务参数 |
-  | client_id | string | 否 | - | 指定客户端执行 |
+  | taskType | string | 是 | - | 任务类型: single_url, batch_url, shop, keyword, shop_price, shop_image |
+  | sourceId | string | 否 | - | 采集源ID，指定后自动继承源的 platform 和 capability |
+  | platform | string | 否 | - | 平台标识，如: 1688, jd, pdd。不指定时从 sourceId 继承 |
+  | capability | string | 否 | - | 能力标签，如: price, image。不指定时从 sourceId 继承 |
+  | shopUrl | string | 否 | - | 店铺URL（shop/shop_price/shop_image 类型需要） |
+  | targetUrls | array | 否 | - | 目标URL列表（single_url/batch_url 类型需要） |
+  | keyword | string | 否 | - | 关键词（keyword 类型需要） |
+  | options | object | 否 | `{}` | 任务选项 |
+  | operatorId | string | 否 | - | 操作人ID |
 
-- **params 字段示例**:
+- **options 字段说明**:
+  | 字段 | 类型 | 默认值 | 说明 |
+  |------|------|--------|------|
+  | maxItems | int | 200 | 最大采集数量 |
+  | concurrency | int | 3 | 并发数 |
+  | saveImagesToOss | bool | true | 是否保存图片到OSS |
+  | saveRawHtml | bool | false | 是否保存原始HTML |
+  | timeoutSeconds | int | 30 | 超时时间（秒） |
+  | retryTimes | int | 2 | 重试次数 |
+  | dedupeStrategy | string | platform_product_id | 去重策略 |
+
+- **请求示例（指定 platform 和 capability）**:
   ```json
   {
-    "shop_url": "https://example.com/shop",
-    "max_pages": 10
+    "taskType": "shop_price",
+    "sourceId": "src_9deb2db5",
+    "platform": "1688",
+    "capability": "price",
+    "shopUrl": "https://xindeyi.1688.com/page/offerlist.htm",
+    "options": {
+      "maxItems": 200,
+      "concurrency": 3,
+      "saveImagesToOss": true,
+      "saveRawHtml": false,
+      "timeoutSeconds": 30,
+      "retryTimes": 2
+    },
+    "operatorId": "admin"
+  }
+  ```
+
+- **请求示例（从采集源自动继承 platform/capability）**:
+  ```json
+  {
+    "taskType": "shop_image",
+    "sourceId": "src_a1b2c3d4",
+    "shopUrl": "https://xindeyi.1688.com/page/offerlist.htm",
+    "options": {
+      "maxItems": 200
+    },
+    "operatorId": "admin"
   }
   ```
 
 - **响应**:
   ```json
   {
-    "code": 200,
+    "code": "OK",
     "message": "success",
     "data": {
-      "task_id": "task_20260425120000",
-      "status": "pending"
+      "taskId": "task_4ea6c2fb",
+      "taskNo": "TASK20260430140022",
+      "status": "pending",
+      "createdAt": "2026-04-30T14:00:22"
     }
   }
   ```
+
+- **任务分配说明**:
+  创建任务时指定的 `platform` 和 `capability` 决定了哪个客户端会接收该任务：
+
+  | 任务配置 | 接收的客户端 |
+  |---------|-------------|
+  | platform=1688, capability=price | client_capabilities 中包含 platform=1688 且 capabilities 包含 price 的客户端 |
+  | platform=1688, capability=image | client_capabilities 中包含 platform=1688 且 capabilities 包含 image 的客户端 |
+  | platform=jd, capability=price | client_capabilities 中包含 platform=jd 且 capabilities 包含 price 的客户端 |
+
+  如果任务未指定 `platform` 或 `capability`，则只有未配置 `client_capabilities` 的旧版客户端才能接收。
 
 ---
 
@@ -422,40 +590,66 @@
 
 ## 五、使用示例
 
-### 5.1 创建爬取任务
+### 5.1 创建采集源
 
 ```bash
-curl -X POST http://localhost:5000/api/tasks \
+curl -X POST http://localhost:5001/api/v1/sources/create \
   -H "Content-Type: application/json" \
   -d '{
-    "instruction": "start_crawl",
-    "params": {
-      "shop_url": "https://example.com/shop",
-      "max_pages": 5
+    "sourceCode": "src_1688_price",
+    "sourceName": "1688价格采集源",
+    "platform": "1688",
+    "capability": "price",
+    "entryUrl": "https://www.1688.com"
+  }'
+```
+
+### 5.2 创建采集任务（指定 platform/capability）
+
+```bash
+curl -X POST http://localhost:5001/api/v1/tasks/create \
+  -H "Content-Type: application/json" \
+  -d '{
+    "taskType": "shop_price",
+    "sourceId": "src_9deb2db5",
+    "platform": "1688",
+    "capability": "price",
+    "shopUrl": "https://xindeyi.1688.com/page/offerlist.htm",
+    "options": {
+      "maxItems": 200,
+      "concurrency": 3
+    },
+    "operatorId": "admin"
+  }'
+```
+
+### 5.3 客户端心跳（带能力标签）
+
+```bash
+curl -X POST http://localhost:5001/api/client/heartbeat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "client_1688_price_01",
+    "status": "idle",
+    "client_type": "shop_price",
+    "client_capabilities": {
+      "platform": "1688",
+      "capabilities": ["price"]
     }
   }'
 ```
 
-### 5.2 客户端心跳
+### 5.4 获取任务列表
 
 ```bash
-curl -X POST http://localhost:5000/api/client/heartbeat \
-  -H "Content-Type: application/json" \
-  -H "X-Client-ID: client-001" \
-  -d '{
-    "client_id": "client-001",
-    "status": "idle"
-  }'
+curl "http://localhost:5001/api/v1/tasks?page=1&pageSize=10&status=pending"
 ```
 
-### 5.3 获取系统状态
+### 5.5 多平台多客户端配置示例
 
-```bash
-curl http://localhost:5000/api/dashboard
-```
-
-### 5.4 获取任务列表（分页）
-
-```bash
-curl "http://localhost:5000/api/tasks?page=1&size=10&status=pending"
-```
+| 客户端 | client_id | platform | capabilities | 接收的任务 |
+|--------|-----------|----------|--------------|-----------|
+| 1688图片采集 | client_1688_image_01 | 1688 | ["image"] | platform=1688, capability=image |
+| 1688价格采集 | client_1688_price_01 | 1688 | ["price"] | platform=1688, capability=price |
+| 京东价格采集 | client_jd_price_01 | jd | ["price"] | platform=jd, capability=price |
+| PDD采集 | client_pdd_01 | pdd | ["price"] | platform=pdd, capability=price |

@@ -194,15 +194,17 @@ def list_sources(keyword: str = None, platform: str = None, status: str = None):
 
 if __name__ == "__main__":
     print("\n" + "#" * 60)
-    print("# 运营工作台 - 多客户端采集任务测试脚本")
+    print("# 运营工作台 - 多平台多能力采集任务测试脚本")
     print("#" * 60)
 
     print("\n--- 1. 查看已有的采集源 ---")
     sources = list_sources()
 
-    print("\n--- 2. 创建多平台采集源 ---")
+    print("\n--- 2. 创建多平台多能力采集源 ---")
+    print("# 采集源是任务模板，定义了 platform 和 capability")
+    print("# 创建任务时指定 sourceId 可自动继承这些配置")
     
-    # 1688 价格采集源
+    # 1688 价格采集源 (capability=price)
     # source_1688_price = create_source(
     #     source_code="src_1688_price",
     #     source_name="1688价格采集源",
@@ -211,7 +213,7 @@ if __name__ == "__main__":
     #     entry_url="https://www.1688.com"
     # )
     
-    # # 1688 图片采集源
+    # # 1688 图片采集源 (capability=image)
     # source_1688_image = create_source(
     #     source_code="src_1688_image",
     #     source_name="1688图片采集源",
@@ -238,9 +240,13 @@ if __name__ == "__main__":
     #     entry_url="https://www.pinduoduo.com"
     # )
 
-    # print("\n--- 3. 创建不同平台的采集任务 ---")
+    print("\n--- 3. 创建不同平台不同能力的采集任务 ---")
+    print("# 任务分配规则:")
+    print("#   platform=1688, capability=price  ->  client_1688_price_01 接收")
+    print("#   platform=1688, capability=image  ->  client_1688_image_01 接收")
+    print("#   platform=jd, capability=price    ->  client_jd_price_01 接收")
     
-    # # 1688 价格采集任务
+    # 1688 图片采集任务 (会被 client_1688_image_01 接收)
     task_1688_price = create_shop_task(
         shop_url="https://xindeyi.1688.com/page/offerlist.htm",
         source_id='src_9deb2db5',
@@ -249,16 +255,16 @@ if __name__ == "__main__":
         max_items=200
     )
     
-    # # 1688 图片采集任务
-    # task_1688_image = create_shop_task(
+    # # 1688 价格采集任务 (会被 client_1688_price_01 接收)
+    # task_1688_price = create_shop_task(
     #     shop_url="https://xindeyi.1688.com/page/offerlist.htm",
-    #     source_id=source_1688_image.get("data", {}).get("sourceId", ""),
+    #     source_id=source_1688_price.get("data", {}).get("sourceId", ""),
     #     platform="1688",
-    #     capability="image",
+    #     capability="price",
     #     max_items=200
     # )
     
-    # # 京东价格采集任务
+    # # 京东价格采集任务 (会被 client_jd_price_01 接收)
     # task_jd_price = create_keyword_task(
     #     keyword="手机",
     #     source_id=source_jd_price.get("data", {}).get("sourceId", ""),
@@ -267,7 +273,7 @@ if __name__ == "__main__":
     #     max_items=100
     # )
     
-    # # PDD采集任务
+    # # PDD采集任务 (会被 client_pdd_01 接收)
     # task_pdd = create_keyword_task(
     #     keyword="衣服",
     #     source_id=source_pdd.get("data", {}).get("sourceId", ""),
@@ -276,17 +282,17 @@ if __name__ == "__main__":
     #     max_items=100
     # )
 
-    # print("\n--- 4. 查询所有任务列表 ---")
-    # list_tasks()
+    print("\n--- 4. 查询所有任务列表 ---")
+    list_tasks()
 
-    # print("\n--- 5. 查询 pending 状态的任务 ---")
-    # list_tasks(status="pending")
+    print("\n--- 5. 查询 pending 状态的任务 ---")
+    list_tasks(status="pending")
 
-    # print("\n" + "#" * 60)
-    # print("# 测试完成！")
-    # print("# 客户端心跳请求示例：")
-    # print("# 1688价格客户端: {'client_id': 'client_1688_price_01', 'client_capabilities': {'platform': '1688', 'capabilities': ['price']}}")
-    # print("# 1688图片客户端: {'client_id': 'client_1688_image_01', 'client_capabilities': {'platform': '1688', 'capabilities': ['image']}}")
-    # print("# 京东价格客户端: {'client_id': 'client_jd_price_01', 'client_capabilities': {'platform': 'jd', 'capabilities': ['price']}}")
-    # print("# PDD客户端: {'client_id': 'client_pdd_01', 'client_capabilities': {'platform': 'pdd', 'capabilities': ['price']}}")
-    # print("#" * 60)
+    print("\n" + "#" * 60)
+    print("# 测试完成！")
+    print("# 客户端心跳请求示例：")
+    print("# 1688价格客户端: {'client_id': 'client_1688_price_01', 'client_capabilities': {'platform': '1688', 'capabilities': ['price']}}")
+    print("# 1688图片客户端: {'client_id': 'client_1688_image_01', 'client_capabilities': {'platform': '1688', 'capabilities': ['image']}}")
+    print("# 京东价格客户端: {'client_id': 'client_jd_price_01', 'client_capabilities': {'platform': 'jd', 'capabilities': ['price']}}")
+    print("# PDD客户端: {'client_id': 'client_pdd_01', 'client_capabilities': {'platform': 'pdd', 'capabilities': ['price']}}")
+    print("#" * 60)

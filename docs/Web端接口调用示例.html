@@ -92,7 +92,7 @@
 <p><strong>请求示例:</strong></p>
 <div class="code-block">
 <pre><span class="comment">// 获取1688平台的采集源，第1页，每页10条</span>
-fetch(<span class="string">'http://localhost:5000/api/v1/sources?platform=1688&page=1&pageSize=10'</span>)
+fetch(<span class="string">'http://localhost:5001/api/v1/sources?platform=1688&page=1&pageSize=10'</span>)
   .then(res => res.json())
   .then(console.log)</pre>
 </div>
@@ -114,12 +114,12 @@ fetch(<span class="string">'http://localhost:5000/api/v1/sources?platform=1688&p
 <p><strong>请求体:</strong></p>
 <div class="code-block">
 <pre>{
-  <span class="string">"sourceCode"</span>: <span class="string">"SRC_1688_DEFAULT"</span>,    <span class="comment">// 必填，采集源编码</span>
-  <span class="string">"sourceName"</span>: <span class="string">"1688默认采集源"</span>,      <span class="comment">// 必填，采集源名称</span>
-  <span class="string">"platform"</span>: <span class="string">"1688"</span>,                 <span class="comment">// 平台</span>
+  <span class="string">"sourceCode"</span>: <span class="string">"src_1688_price"</span>,    <span class="comment">// 必填，采集源编码</span>
+  <span class="string">"sourceName"</span>: <span class="string">"1688价格采集源"</span>,      <span class="comment">// 必填，采集源名称</span>
+  <span class="string">"platform"</span>: <span class="string">"1688"</span>,                 <span class="comment">// 必填，平台标识：1688/jd/pdd等</span>
+  <span class="string">"capability"</span>: <span class="string">"price"</span>,               <span class="comment">// 必填，能力标签：price/image</span>
   <span class="string">"sourceType"</span>: <span class="string">"url"</span>,                 <span class="comment">// 类型：url/shop/keyword</span>
-  <span class="string">"entryUrl"</span>: <span class="string">"https://xindeyi.1688.com"</span>,  <span class="comment">// 入口URL</span>
-  <span class="string">"parserCode"</span>: <span class="string">"1688_offer_v1"</span>,
+  <span class="string">"entryUrl"</span>: <span class="string">"https://www.1688.com"</span>,  <span class="comment">// 入口URL</span>
   <span class="string">"config"</span>: {                         <span class="comment">// 配置项</span>
     <span class="string">"rateLimitPerMinute"</span>: <span class="string">"60"</span>,
     <span class="string">"timeoutSeconds"</span>: <span class="string">"30"</span>,
@@ -131,19 +131,35 @@ fetch(<span class="string">'http://localhost:5000/api/v1/sources?platform=1688&p
 
 <p><strong>请求示例:</strong></p>
 <div class="code-block">
-<pre><span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5000/api/v1/sources/create'</span>, {
+<pre><span class="comment">// 创建1688价格采集源</span>
+<span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5001/api/v1/sources/create'</span>, {
   method: <span class="string">'POST'</span>,
   headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
   body: JSON.stringify({
-    sourceCode: <span class="string">'SRC_1688_DEFAULT'</span>,
-    sourceName: <span class="string">'1688默认采集源'</span>,
+    sourceCode: <span class="string">'src_1688_price'</span>,
+    sourceName: <span class="string">'1688价格采集源'</span>,
     platform: <span class="string">'1688'</span>,
+    capability: <span class="string">'price'</span>,
     sourceType: <span class="string">'url'</span>,
-    entryUrl: <span class="string">'https://xindeyi.1688.com'</span>
+    entryUrl: <span class="string">'https://www.1688.com'</span>
   })
 });
 <span class="keyword">const</span> data = <span class="keyword">await</span> response.json();
-console.log(data);</pre>
+<span class="comment">// 返回: { sourceId: "src_9deb2db5", sourceCode: "src_1688_price", status: "enabled" }</span>
+
+<span class="comment">// 创建1688图片采集源</span>
+<span class="keyword">const</span> response2 = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5001/api/v1/sources/create'</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+  body: JSON.stringify({
+    sourceCode: <span class="string">'src_1688_image'</span>,
+    sourceName: <span class="string">'1688图片采集源'</span>,
+    platform: <span class="string">'1688'</span>,
+    capability: <span class="string">'image'</span>,
+    sourceType: <span class="string">'url'</span>,
+    entryUrl: <span class="string">'https://www.1688.com'</span>
+  })
+});</pre>
 </div>
 
 <h3>2.4 更新采集源</h3>
@@ -189,32 +205,79 @@ console.log(data);</pre>
 <p><strong>请求体:</strong></p>
 <div class="code-block">
 <pre>{
-  <span class="string">"taskType"</span>: <span class="string">"shop"</span>,              <span class="comment">// 必填：single_url/batch_url/shop/keyword</span>
-  <span class="string">"sourceId"</span>: <span class="string">"src_14871529"</span>,    <span class="comment">// 采集源ID</span>
-  <span class="string">"targetUrls"</span>: [],                <span class="comment">// batch_url时使用，批量URL列表</span>
+  <span class="string">"taskType"</span>: <span class="string">"shop_price"</span>,            <span class="comment">// 必填：single_url/batch_url/shop/keyword/shop_price/shop_image</span>
+  <span class="string">"sourceId"</span>: <span class="string">"src_9deb2db5"</span>,        <span class="comment">// 采集源ID（指定后自动继承platform和capability）</span>
+  <span class="string">"platform"</span>: <span class="string">"1688"</span>,                <span class="comment">// 平台标识（不指定时从sourceId继承）</span>
+  <span class="string">"capability"</span>: <span class="string">"price"</span>,             <span class="comment">// 能力标签（不指定时从sourceId继承）</span>
+  <span class="string">"shopUrl"</span>: <span class="string">"https://xindeyi.1688.com/page/offerlist.htm"</span>,  <span class="comment">// shop类型时使用</span>
+  <span class="string">"targetUrls"</span>: [],                   <span class="comment">// batch_url/single_url时使用</span>
+  <span class="string">"keyword"</span>: <span class="string">""</span>,                      <span class="comment">// keyword类型时使用</span>
   <span class="string">"options"</span>: {
-    <span class="string">"maxItems"</span>: <span class="string">"200"</span>,            <span class="comment">// 最大采集数量</span>
-    <span class="string">"concurrency"</span>: <span class="string">"3"</span>,         <span class="comment">// 并发数</span>
-    <span class="string">"saveImagesToOss"</span>: <span class="keyword">true</span>
+    <span class="string">"maxItems"</span>: <span class="string">"200"</span>,               <span class="comment">// 最大采集数量</span>
+    <span class="string">"concurrency"</span>: <span class="string">"3"</span>,              <span class="comment">// 并发数</span>
+    <span class="string">"saveImagesToOss"</span>: <span class="keyword">true</span>,
+    <span class="string">"timeoutSeconds"</span>: <span class="string">"30"</span>,
+    <span class="string">"retryTimes"</span>: <span class="string">"2"</span>
   },
-  <span class="string">"operatorId"</span>: <span class="string">"user_001"</span>,      <span class="comment">// 操作人ID</span>
-  <span class="string">"idempotencyKey"</span>: <span class="string">"key_xxx"</span>  <span class="comment">// 幂等键（可选）</span>
+  <span class="string">"operatorId"</span>: <span class="string">"admin"</span>             <span class="comment">// 操作人ID</span>
 }</pre>
 </div>
 
-<p><strong>请求示例:</strong></p>
+<p><strong>请求示例1：手动指定 platform 和 capability</strong></p>
 <div class="code-block">
-<pre><span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5000/api/v1/tasks/create'</span>, {
+<pre><span class="comment">// 创建1688价格采集任务，指定 platform 和 capability</span>
+<span class="comment">// 该任务会被 client_1688_price_01 接收（capabilities包含price的客户端）</span>
+<span class="keyword">const</span> response = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5001/api/v1/tasks/create'</span>, {
   method: <span class="string">'POST'</span>,
   headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
   body: JSON.stringify({
-    taskType: <span class="string">'shop'</span>,
-    sourceId: <span class="string">'src_14871529'</span>,
-    options: { maxItems: <span class="string">'200'</span> }
+    taskType: <span class="string">'shop_price'</span>,
+    sourceId: <span class="string">'src_9deb2db5'</span>,
+    platform: <span class="string">'1688'</span>,
+    capability: <span class="string">'price'</span>,
+    shopUrl: <span class="string">'https://xindeyi.1688.com/page/offerlist.htm'</span>,
+    options: {
+      maxItems: <span class="string">200</span>,
+      concurrency: <span class="string">3</span>,
+      saveImagesToOss: <span class="keyword">true</span>
+    },
+    operatorId: <span class="string">'admin'</span>
   })
 });
 <span class="keyword">const</span> data = <span class="keyword">await</span> response.json();
-<span class="comment">// 返回: { taskId: "task_xxx", taskNo: "COL20260427XXXX", status: "pending" }</span></pre>
+<span class="comment">// 返回: { taskId: "task_xxx", taskNo: "COL20260430XXXX", status: "pending" }</span></pre>
+</div>
+
+<p><strong>请求示例2：从采集源自动继承 platform 和 capability</strong></p>
+<div class="code-block">
+<pre><span class="comment">// 创建1688图片采集任务，不指定 platform/capability</span>
+<span class="comment">// 服务端会自动从 sourceId 对应的采集源继承 platform=1688, capability=image</span>
+<span class="comment">// 该任务会被 client_1688_image_01 接收（capabilities包含image的客户端）</span>
+<span class="keyword">const</span> response2 = <span class="keyword">await</span> fetch(<span class="string">'http://localhost:5001/api/v1/tasks/create'</span>, {
+  method: <span class="string">'POST'</span>,
+  headers: { <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span> },
+  body: JSON.stringify({
+    taskType: <span class="string">'shop_image'</span>,
+    sourceId: <span class="string">'src_a1b2c3d4'</span>,
+    shopUrl: <span class="string">'https://xindeyi.1688.com/page/offerlist.htm'</span>,
+    options: {
+      maxItems: <span class="string">200</span>,
+      concurrency: <span class="string">3</span>
+    },
+    operatorId: <span class="string">'admin'</span>
+  })
+});</pre>
+</div>
+
+<p><strong>任务分配规则:</strong></p>
+<div class="params">
+<table>
+<tr><th>任务配置</th><th>接收的客户端</th></tr>
+<tr><td>platform=1688, capability=price</td><td>client_capabilities 中 platform=1688 且 capabilities 包含 price 的客户端</td></tr>
+<tr><td>platform=1688, capability=image</td><td>client_capabilities 中 platform=1688 且 capabilities 包含 image 的客户端</td></tr>
+<tr><td>platform=jd, capability=price</td><td>client_capabilities 中 platform=jd 且 capabilities 包含 price 的客户端</td></tr>
+<tr><td>未指定 platform/capability</td><td>仅旧版未配置 client_capabilities 的客户端可接收</td></tr>
+</table>
 </div>
 
 <h3>3.2 获取任务列表</h3>
@@ -312,7 +375,7 @@ console.log(data);</pre>
 <h2 id="js-example">5. 完整JS调用示例（带错误处理）</h2>
 
 <div class="code-block">
-<pre><span class="keyword">const</span> BASE_URL = <span class="string">'http://localhost:5000/api/v1'</span>;
+<pre><span class="keyword">const</span> BASE_URL = <span class="string">'http://localhost:5001/api/v1'</span>;
 
 <span class="comment">// 通用请求封装</span>
 <span class="keyword">async function</span> request(url, options = {}) {
@@ -365,6 +428,33 @@ console.log(data);</pre>
   });
 }
 
+<span class="comment">// 使用示例：创建带 platform/capability 的任务</span>
+<span class="keyword">async function</span> createPriceTask() {
+  <span class="comment">// 方式1：手动指定 platform 和 capability</span>
+  <span class="keyword">const</span> task1 = <span class="keyword">await</span> createTask({
+    taskType: <span class="string">'shop_price'</span>,
+    sourceId: <span class="string">'src_9deb2db5'</span>,
+    platform: <span class="string">'1688'</span>,
+    capability: <span class="string">'price'</span>,
+    shopUrl: <span class="string">'https://xindeyi.1688.com/page/offerlist.htm'</span>,
+    options: { maxItems: <span class="string">200</span>, concurrency: <span class="string">3</span> },
+    operatorId: <span class="string">'admin'</span>
+  });
+  console.log(<span class="string">'价格任务已创建:'</span>, task1.taskId);
+}
+
+<span class="keyword">async function</span> createImageTask() {
+  <span class="comment">// 方式2：从采集源自动继承 platform 和 capability</span>
+  <span class="keyword">const</span> task2 = <span class="keyword">await</span> createTask({
+    taskType: <span class="string">'shop_image'</span>,
+    sourceId: <span class="string">'src_a1b2c3d4'</span>,
+    shopUrl: <span class="string">'https://xindeyi.1688.com/page/offerlist.htm'</span>,
+    options: { maxItems: <span class="string">200</span> },
+    operatorId: <span class="string">'admin'</span>
+  });
+  console.log(<span class="string">'图片任务已创建:'</span>, task2.taskId);
+}
+
 <span class="comment">// 获取任务列表</span>
 <span class="keyword">async function</span> getTasks(params = {}) {
   <span class="keyword">const</span> query = <span class="keyword">new</span> URLSearchParams(params).toString();
@@ -400,16 +490,30 @@ console.log(data);</pre>
   <span class="keyword">const</span> sources = <span class="keyword">await</span> getSources({ platform: <span class="string">'1688'</span> });
   console.log(<span class="string">'采集源:'</span>, sources.items);
 
-  <span class="comment">// 3. 创建任务</span>
-  <span class="keyword">const</span> task = <span class="keyword">await</span> createTask({
-    taskType: <span class="string">'shop'</span>,
-    sourceId: <span class="string">'src_14871529'</span>,
-    options: { maxItems: <span class="string">'100'</span> }
+  <span class="comment">// 3. 创建价格任务（手动指定 platform/capability）</span>
+  <span class="keyword">const</span> priceTask = <span class="keyword">await</span> createTask({
+    taskType: <span class="string">'shop_price'</span>,
+    sourceId: <span class="string">'src_9deb2db5'</span>,
+    platform: <span class="string">'1688'</span>,
+    capability: <span class="string">'price'</span>,
+    shopUrl: <span class="string">'https://xindeyi.1688.com/page/offerlist.htm'</span>,
+    options: { maxItems: <span class="string">200</span> },
+    operatorId: <span class="string">'admin'</span>
   });
-  console.log(<span class="string">'任务已创建:'</span>, task.taskId);
+  console.log(<span class="string">'价格任务已创建:'</span>, priceTask.taskId);
 
-  <span class="comment">// 4. 轮询任务状态</span>
-  <span class="keyword">const</span> detail = <span class="keyword">await</span> getTaskDetail(task.taskId);
+  <span class="comment">// 4. 创建图片任务（从采集源自动继承）</span>
+  <span class="keyword">const</span> imageTask = <span class="keyword">await</span> createTask({
+    taskType: <span class="string">'shop_image'</span>,
+    sourceId: <span class="string">'src_a1b2c3d4'</span>,
+    shopUrl: <span class="string">'https://xindeyi.1688.com/page/offerlist.htm'</span>,
+    options: { maxItems: <span class="string">200</span> },
+    operatorId: <span class="string">'admin'</span>
+  });
+  console.log(<span class="string">'图片任务已创建:'</span>, imageTask.taskId);
+
+  <span class="comment">// 5. 轮询任务状态</span>
+  <span class="keyword">const</span> detail = <span class="keyword">await</span> getTaskDetail(priceTask.taskId);
   console.log(<span class="string">'任务详情:'</span>, detail);
 }
 

@@ -67,47 +67,76 @@ GET /api/tasks
 ### 1.2 创建任务
 
 ```
-POST /api/tasks
+POST /api/v1/tasks/create
 ```
 
 **请求体:**
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| instruction | string | 否 | 指令类型，默认start_crawl |
-| params | object | 否 | 任务参数 |
-| client_id | string | 否 | 指定客户端ID（可选） |
+| 字段 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| taskType | string | 是 | - | 任务类型: single_url, batch_url, shop, keyword, shop_price, shop_image |
+| sourceId | string | 否 | - | 采集源ID，指定后自动继承源的 platform 和 capability |
+| platform | string | 否 | - | 平台标识，如: 1688, jd, pdd |
+| capability | string | 否 | - | 能力标签，如: price, image |
+| shopUrl | string | 否 | - | 店铺URL（shop类型需要） |
+| targetUrls | array | 否 | - | 目标URL列表（single_url/batch_url类型需要） |
+| keyword | string | 否 | - | 关键词（keyword类型需要） |
+| options | object | 否 | `{}` | 任务选项（maxItems, concurrency等） |
+| operatorId | string | 否 | - | 操作人ID |
 
-**params参数说明:**
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| shop_url | string | 店铺URL |
-| max_pages | int | 最大爬取页数 |
-
-**请求示例:**
+**请求示例（指定 platform 和 capability）:**
 ```json
 {
-    "instruction": "start_crawl",
-    "params": {
-        "shop_url": "https://xindeyi.1688.com",
-        "max_pages": 5
+    "taskType": "shop_price",
+    "sourceId": "src_9deb2db5",
+    "platform": "1688",
+    "capability": "price",
+    "shopUrl": "https://xindeyi.1688.com/page/offerlist.htm",
+    "options": {
+        "maxItems": 200,
+        "concurrency": 3,
+        "saveImagesToOss": true,
+        "timeoutSeconds": 30,
+        "retryTimes": 2
     },
-    "client_id": "client_001"
+    "operatorId": "admin"
+}
+```
+
+**请求示例（从采集源自动继承）:**
+```json
+{
+    "taskType": "shop_image",
+    "sourceId": "src_a1b2c3d4",
+    "shopUrl": "https://xindeyi.1688.com/page/offerlist.htm",
+    "options": {
+        "maxItems": 200
+    },
+    "operatorId": "admin"
 }
 ```
 
 **响应示例:**
 ```json
 {
-    "code": 200,
+    "code": "OK",
     "message": "success",
     "data": {
-        "task_id": "task_20260424100000",
-        "status": "pending"
+        "taskId": "task_4ea6c2fb",
+        "taskNo": "TASK20260430140022",
+        "status": "pending",
+        "createdAt": "2026-04-30T14:00:22"
     }
 }
 ```
+
+**任务分配说明:**
+
+| 任务配置 | 接收的客户端 |
+|---------|-------------|
+| platform=1688, capability=price | client_capabilities 中 platform=1688 且 capabilities 包含 price 的客户端 |
+| platform=1688, capability=image | client_capabilities 中 platform=1688 且 capabilities 包含 image 的客户端 |
+| 未指定 platform/capability | 仅旧版未配置 client_capabilities 的客户端可接收 |
 
 ---
 
