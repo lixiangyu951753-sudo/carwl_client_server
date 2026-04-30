@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>采集任务管理平台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        /* 头部 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .stat-card .label { color: #666; font-size: 14px; }
+        
+        /* 标签页 */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .tab-btn:hover { background: #f0f0f0; }
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        /* 内容区域 */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* 卡片 */
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        /* 表单 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* 按钮 */
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-primary:hover { background: #5a6fd6; }
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+        .btn-success:hover { background: #49ad17; }
+        .btn-danger {
+            background: #ff4d4f;
+            color: white;
+        }
+        .btn-danger:hover { background: #e64446; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+        
+        /* 表格 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-table th {
+            background: #fafafa;
+            font-weight: 600;
+            color: #666;
+        }
+        .data-table tr:hover { background: #f8f9fa; }
+        
+        /* 状态标签 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-pending { background: #fff7e6; color: #fa8c16; }
+        .status-running { background: #e6f7ff; color: #1890ff; }
+        .status-succeeded { background: #f6ffed; color: #52c41a; }
+        .status-failed { background: #fff1f0; color: #ff4d4f; }
+        .status-canceled { background: #f5f5f5; color: #999; }
+        
+        /* 客户端状态 */
+        .client-online { color: #52c41a; }
+        .client-offline { color: #999; }
+        .client-busy { color: #fa8c16; }
+        
+        /* 响应消息 */
+        .response-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 6px;
+            display: none;
+        }
+        .response-box.error {
+            background: #fff1f0;
+            border-color: #ffa39e;
+        }
+        .response-box.show { display: block; }
+        
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        /* 分页 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .page-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .page-btn:hover { background: #f0f0f0; }
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>采集任务管理平台</h1>
+            <p>多平台多能力分布式爬虫任务调度系统</p>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">待执行</div>
+                <div class="number" id="stat-pending">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">执行中</div>
+                <div class="number" id="stat-running">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">已完成</div>
+                <div class="number" id="stat-succeeded">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">失败</div>
+                <div class="number" id="stat-failed">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">在线客户端</div>
+                <div class="number" id="stat-clients">0</div>
+            </div>
+        </div>
+        
+        <!-- 标签页 -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('tasks')">任务管理</button>
+            <button class="tab-btn" onclick="switchTab('sources')">采集源管理</button>
+            <button class="tab-btn" onclick="switchTab('clients')">客户端监控</button>
+            <button class="tab-btn" onclick="switchTab('create-task')">创建任务</button>
+            <button class="tab-btn" onclick="switchTab('create-source')">创建采集源</button>
+        </div>
+        
+        <!-- 任务管理 -->
+        <div id="tab-tasks" class="tab-content active">
+            <div class="card">
+                <div class="card-title">任务列表</div>
+                <div style="margin-bottom: 15px;">
+                    <select id="task-filter-status" onchange="loadTasks()" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                        <option value="">全部状态</option>
+                        <option value="pending">待执行</option>
+                        <option value="running">执行中</option>
+                        <option value="succeeded">已完成</option>
+                        <option value="failed">失败</option>
+                        <option value="canceled">已取消</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="loadTasks()" style="margin-left: 10px;">刷新</button>
+                </div>
+                <table class="data-table" id="tasks-table">
+                    <thead>
+                        <tr>
+                            <th>任务ID</th>
+                            <th>类型</th>
+                            <th>平台</th>
+                            <th>能力</th>
+                            <th>状态</th>
+                            <th>进度</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-tbody">
+                        <tr><td colspan="8" class="empty-state">加载中...</td></tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="tasks-pagination"></div>
+            </div>
+        </div>
+        
+        <!-- 采集源管理 -->
+        <div id="tab-sources" class="tab-content">
+            <div class="card">
+                <div class="card-title">采集源列表</div>
+                <button class="btn btn-primary btn-sm" onclick="loadSources()" style="margin-bottom: 15px;">刷新</button>
+                <table class="data-table" id="sources-table">
+                    <thead>
+                        <tr>
+                            <th>源ID</th>
+                            <th>编码</th>
+                            <th>名称</th>
+                            <th>平台</th>
+                            <th>能力</th>
+                            <th>类型</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sources-tbody">
+                        <tr><td colspan="8" class="empty-state">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 客户端监控 -->
+        <div id="tab-clients" class="tab-content">
+            <div class="card">
+                <div class="card-title">在线客户端</div>
+                <button class="btn btn-primary btn-sm" onclick="loadClients()" style="margin-bottom: 15px;">刷新</button>
+                <table class="data-table" id="clients-table">
+                    <thead>
+                        <tr>
+                            <th>客户端ID</th>
+                            <th>状态</th>
+                            <th>当前任务</th>
+                            <th>平台</th>
+                            <th>能力</th>
+                            <th>最后心跳</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clients-tbody">
+                        <tr><td colspan="6" class="empty-state">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 创建任务 -->
+        <div id="tab-create-task" class="tab-content">
+            <div class="card">
+                <div class="card-title">创建采集任务</div>
+                <form id="create-task-form" onsubmit="createTask(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>任务类型 *</label>
+                            <select id="task-type" required>
+                                <option value="">请选择</option>
+                                <option value="shop_price">店铺价格采集</option>
+                                <option value="shop_image">店铺图片采集</option>
+                                <option value="single_url">单链接采集</option>
+                                <option value="batch_url">批量链接采集</option>
+                                <option value="keyword">关键词采集</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>采集源ID</label>
+                            <input type="text" id="task-source-id" placeholder="src_xxx（可选，指定后自动继承平台和能力）">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>平台</label>
+                            <select id="task-platform">
+                                <option value="">自动继承/不指定</option>
+                                <option value="1688">1688</option>
+                                <option value="jd">京东</option>
+                                <option value="pdd">拼多多</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>能力标签</label>
+                            <select id="task-capability">
+                                <option value="">自动继承/不指定</option>
+                                <option value="price">价格采集</option>
+                                <option value="image">图片采集</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>店铺URL / 目标链接</label>
+                        <input type="text" id="task-url" placeholder="https://xindeyi.1688.com/page/offerlist.htm">
+                    </div>
+                    <div class="form-group">
+                        <label>关键词</label>
+                        <input type="text" id="task-keyword" placeholder="用于关键词采集任务">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>最大采集数量</label>
+                            <input type="number" id="task-max-items" value="200" min="1" max="1000">
+                        </div>
+                        <div class="form-group">
+                            <label>并发数</label>
+                            <input type="number" id="task-concurrency" value="3" min="1" max="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>操作人ID</label>
+                        <input type="text" id="task-operator" value="admin">
+                    </div>
+                    <button type="submit" class="btn btn-primary">创建任务</button>
+                    <div id="task-response" class="response-box"></div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- 创建采集源 -->
+        <div id="tab-create-source" class="tab-content">
+            <div class="card">
+                <div class="card-title">创建采集源</div>
+                <form id="create-source-form" onsubmit="createSource(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>源编码 *</label>
+                            <input type="text" id="source-code" placeholder="src_1688_price" required>
+                        </div>
+                        <div class="form-group">
+                            <label>源名称 *</label>
+                            <input type="text" id="source-name" placeholder="1688价格采集源" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>平台 *</label>
+                            <select id="source-platform" required>
+                                <option value="">请选择</option>
+                                <option value="1688">1688</option>
+                                <option value="jd">京东</option>
+                                <option value="pdd">拼多多</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>能力标签 *</label>
+                            <select id="source-capability" required>
+                                <option value="">请选择</option>
+                                <option value="price">价格采集</option>
+                                <option value="image">图片采集</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>入口URL</label>
+                        <input type="text" id="source-entry-url" placeholder="https://www.1688.com">
+                    </div>
+                    <div class="form-group">
+                        <label>源类型</label>
+                        <select id="source-type">
+                            <option value="url">URL</option>
+                            <option value="shop">店铺</option>
+                            <option value="keyword">关键词</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">创建采集源</button>
+                    <div id="source-response" class="response-box"></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5001/api/v1';
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            // 加载对应数据
+            if (tabName === 'tasks') loadTasks();
+            if (tabName === 'sources') loadSources();
+            if (tabName === 'clients') loadClients();
+        }
+        
+        // 通用请求
+        async function apiRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                return { code: 'ERROR', message: error.message };
+            }
+        }
+        
+        // 加载统计数据
+        async function loadStats() {
+            const tasksData = await apiRequest(`${API_BASE}/tasks?page=1&pageSize=1`);
+            if (tasksData.code === 'OK') {
+                // 这里简化处理，实际需要按状态统计
+                const tasks = tasksData.data.items || [];
+                document.getElementById('stat-pending').textContent = tasks.filter(t => t.status === 'pending').length;
+                document.getElementById('stat-running').textContent = tasks.filter(t => t.status === 'running').length;
+                document.getElementById('stat-succeeded').textContent = tasks.filter(t => t.status === 'succeeded').length;
+                document.getElementById('stat-failed').textContent = tasks.filter(t => t.status === 'failed').length;
+            }
+            
+            // 加载客户端数
+            const clientsData = await apiRequest(`${API_BASE}/clients`);
+            if (clientsData.code === 'OK') {
+                document.getElementById('stat-clients').textContent = (clientsData.data || []).length;
+            }
+        }
+        
+        // 加载任务列表
+        async function loadTasks(page = 1) {
+            const status = document.getElementById('task-filter-status').value;
+            let url = `${API_BASE}/tasks?page=${page}&pageSize=10`;
+            if (status) url += `&status=${status}`;
+            
+            const data = await apiRequest(url);
+            const tbody = document.getElementById('tasks-tbody');
+            
+            if (data.code !== 'OK' || !data.data.items.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.items.map(task => `
+                <tr>
+                    <td>${task.taskId}</td>
+                    <td>${task.taskType}</td>
+                    <td>${task.platform || '-'}</td>
+                    <td>${task.capability || '-'}</td>
+                    <td><span class="status-badge status-${task.status}">${task.status}</span></td>
+                    <td>${task.progress || 0}%</td>
+                    <td>${new Date(task.createdAt).toLocaleString()}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="cancelTask('${task.taskId}')">取消</button>
+                        <button class="btn btn-primary btn-sm" onclick="retryTask('${task.taskId}')">重试</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // 分页
+            const totalPages = Math.ceil(data.data.total / 10);
+            document.getElementById('tasks-pagination').innerHTML = Array.from({length: totalPages}, (_, i) => `
+                <button class="page-btn ${i+1 === page ? 'active' : ''}" onclick="loadTasks(${i+1})">${i+1}</button>
+            `).join('');
+        }
+        
+        // 加载采集源列表
+        async function loadSources() {
+            const data = await apiRequest(`${API_BASE}/sources?page=1&pageSize=50`);
+            const tbody = document.getElementById('sources-tbody');
+            
+            if (data.code !== 'OK' || !data.data.items.length) {
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">暂无数据</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.items.map(source => `
+                <tr>
+                    <td>${source.sourceId}</td>
+                    <td>${source.sourceCode}</td>
+                    <td>${source.sourceName}</td>
+                    <td>${source.platform}</td>
+                    <td>${source.capability || '-'}</td>
+                    <td>${source.sourceType}</td>
+                    <td><span class="status-badge status-${source.status}">${source.status}</span></td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSource('${source.sourceId}')">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // 加载客户端列表
+        async function loadClients() {
+            const data = await apiRequest(`${API_BASE}/clients`);
+            const tbody = document.getElementById('clients-tbody');
+            
+            if (data.code !== 'OK' || !data.data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-state">暂无在线客户端</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.map(client => `
+                <tr>
+                    <td>${client.client_id}</td>
+                    <td class="client-${client.status}">${client.status}</td>
+                    <td>${client.current_task || '-'}</td>
+                    <td>${client.platform || '-'}</td>
+                    <td>${client.capabilities ? client.capabilities.join(', ') : '-'}</td>
+                    <td>${new Date(client.last_heartbeat).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+        
+        // 创建任务
+        async function createTask(event) {
+            event.preventDefault();
+            const responseBox = document.getElementById('task-response');
+            
+            const taskType = document.getElementById('task-type').value;
+            const sourceId = document.getElementById('task-source-id').value;
+            const platform = document.getElementById('task-platform').value;
+            const capability = document.getElementById('task-capability').value;
+            const url = document.getElementById('task-url').value;
+            const keyword = document.getElementById('task-keyword').value;
+            const maxItems = parseInt(document.getElementById('task-max-items').value);
+            const concurrency = parseInt(document.getElementById('task-concurrency').value);
+            const operatorId = document.getElementById('task-operator').value;
+            
+            const body = {
+                taskType,
+                options: { maxItems, concurrency, saveImagesToOss: true },
+                operatorId
+            };
+            
+            if (sourceId) body.sourceId = sourceId;
+            if (platform) body.platform = platform;
+            if (capability) body.capability = capability;
+            if (url) {
+                if (taskType === 'shop_price' || taskType === 'shop_image' || taskType === 'shop') {
+                    body.shopUrl = url;
+                } else {
+                    body.targetUrls = [url];
+                }
+            }
+            if (keyword) body.keyword = keyword;
+            
+            const data = await apiRequest(`${API_BASE}/tasks/create`, {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+            
+            if (data.code === 'OK') {
+                responseBox.className = 'response-box show';
+                responseBox.innerHTML = `<strong>创建成功！</strong><br>任务ID: ${data.data.taskId}<br>任务编号: ${data.data.taskNo}`;
+                document.getElementById('create-task-form').reset();
+                loadTasks();
+            } else {
+                responseBox.className = 'response-box show error';
+                responseBox.innerHTML = `<strong>创建失败：</strong>${data.message}`;
+            }
+        }
+        
+        // 创建采集源
+        async function createSource(event) {
+            event.preventDefault();
+            const responseBox = document.getElementById('source-response');
+            
+            const body = {
+                sourceCode: document.getElementById('source-code').value,
+                sourceName: document.getElementById('source-name').value,
+                platform: document.getElementById('source-platform').value,
+                capability: document.getElementById('source-capability').value,
+                sourceType: document.getElementById('source-type').value,
+                entryUrl: document.getElementById('source-entry-url').value
+            };
+            
+            const data = await apiRequest(`${API_BASE}/sources/create`, {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+            
+            if (data.code === 'OK') {
+                responseBox.className = 'response-box show';
+                responseBox.innerHTML = `<strong>创建成功！</strong><br>源ID: ${data.data.sourceId}<br>状态: ${data.data.status}`;
+                document.getElementById('create-source-form').reset();
+                loadSources();
+            } else {
+                responseBox.className = 'response-box show error';
+                responseBox.innerHTML = `<strong>创建失败：</strong>${data.message}`;
+            }
+        }
+        
+        // 取消任务
+        async function cancelTask(taskId) {
+            if (!confirm('确定要取消该任务吗？')) return;
+            const data = await apiRequest(`${API_BASE}/tasks/cancel`, {
+                method: 'POST',
+                body: JSON.stringify({ taskId })
+            });
+            if (data.code === 'OK') {
+                alert('任务已取消');
+                loadTasks();
+            } else {
+                alert('取消失败：' + data.message);
+            }
+        }
+        
+        // 重试任务
+        async function retryTask(taskId) {
+            const data = await apiRequest(`${API_BASE}/tasks/retry`, {
+                method: 'POST',
+                body: JSON.stringify({ taskId })
+            });
+            if (data.code === 'OK') {
+                alert('任务已重试');
+                loadTasks();
+            } else {
+                alert('重试失败：' + data.message);
+            }
+        }
+        
+        // 删除采集源
+        async function deleteSource(sourceId) {
+            if (!confirm('确定要删除该采集源吗？')) return;
+            const data = await apiRequest(`${API_BASE}/sources/delete`, {
+                method: 'POST',
+                body: JSON.stringify({ sourceId })
+            });
+            if (data.code === 'OK') {
+                alert('采集源已删除');
+                loadSources();
+            } else {
+                alert('删除失败：' + data.message);
+            }
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStats();
+            loadTasks();
+            // 每30秒自动刷新
+            setInterval(() => {
+                loadStats();
+                if (document.getElementById('tab-tasks').classList.contains('active')) {
+                    loadTasks();
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>
