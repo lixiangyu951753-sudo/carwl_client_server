@@ -61,6 +61,20 @@ def heartbeat():
 
     update_client_heartbeat(client_id, status, current_task, client_type=client_type, client_capabilities=client_capabilities)
 
+    # 检查客户端当前执行的任务是否被取消
+    if current_task:
+        collector_task = db.collector_tasks.find_one({"taskId": current_task})
+        if collector_task and collector_task.get("status") == "canceled":
+            return jsonify({
+                "code": 200,
+                "message": "success",
+                "data": {
+                    "instruction": "stop_crawl",
+                    "task_id": current_task,
+                    "reason": "task_canceled_by_server"
+                }
+            })
+
     collector_task = get_pending_collector_task(client_id, client_type, client_capabilities)
     if collector_task:
         instruction_data = _collector_task_to_instruction(collector_task)
