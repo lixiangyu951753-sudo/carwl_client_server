@@ -1,4 +1,4 @@
-import time
+﻿import time
 import threading
 from api_client import ClientAPI
 import config
@@ -65,11 +65,14 @@ class TaskManager:
                 if self._crawl_callback:
                     result = self._crawl_callback(task_id, params)
                     if result:
-                        self.api.report_result(
-                            task_id,
-                            result.get("batch_id", ""),
-                            result.get("products", [])
-                        )
+                        if result.get("error"):
+                            self.api.report_progress(task_id, "failed", error=result.get("error"))
+                        else:
+                            self.api.report_result(
+                                task_id,
+                                result.get("batch_id", ""),
+                                result.get("products", [])
+                            )
                     break
                 else:
                     print("[任务管理] 未设置爬取回调函数")
