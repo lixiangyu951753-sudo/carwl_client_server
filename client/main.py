@@ -4,6 +4,7 @@ import json
 import hashlib
 from datetime import datetime
 from urllib.parse import urlparse
+import time
 
 import requests
 from DrissionPage import ChromiumPage,ChromiumOptions
@@ -11,6 +12,7 @@ from DrissionPage import ChromiumPage,ChromiumOptions
 from api_client import ClientAPI
 from task_manager import TaskManager
 import config
+from human_track import generate_human_track
 
 co = ChromiumOptions()
 co.set_local_port(9221)
@@ -83,7 +85,7 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         return None
 
     save_task(task_id, 'running', file_name=tab_detail.title, url=product_url, batch_id=batch_id)
-
+    # 通知服务器任务状态
     if server_task_id:
         api.report_progress(server_task_id, "running", progress={
             "current_product": task_id,
@@ -91,6 +93,87 @@ def shop_detail(batch_id: str, server_task_id: str = None):
         })
 
     product_title = tab_detail.title
+    # 验证码判断与处理
+    if "验证码" in product_title:
+        print('[验证码] 检测到验证码页面，尝试自动处理')
+        slder = tab_detail.ele('#nc_1_n1z', timeout=3)
+        if slder:
+            print('[验证码] 滑动条存在，开始自动拖动')
+            distance = 280
+            track = generate_human_track(distance)
+            act = tab_detail.actions
+            act.hold(slder)
+
+            for dx, dy, dt in track:
+                act.move(dx, dy)
+                time.sleep(dt)
+
+            act.release()
+            print("[验证码] 拖动完成，等待验证结果...")
+            time.sleep(2)
+            
+            # 检查验证是否通过
+            product_title = tab_detail.title
+            if "验证码" in product_title:
+                print('[验证码] 自动验证未通过，等待人工处理...')
+                # 上报服务器等待人工处理
+                if server_task_id:
+                    api.report_progress(server_task_id, "running", progress={
+                        "current_product": task_id,
+                        "status": "waiting_captcha",
+                        "message": "验证码自动处理失败，等待人工操作"
+                    })
+                
+                # 等待人工处理，最多等待5分钟
+                wait_count = 0
+                max_wait = 300  # 5分钟
+                while "验证码" in tab_detail.title and wait_count < max_wait:
+                    time.sleep(1)
+                    wait_count += 1
+                    if wait_count % 10 == 0:
+                        print(f'[验证码] 已等待 {wait_count} 秒，请人工完成验证...')
+                
+                if "验证码" in tab_detail.title:
+                    print('[验证码] 等待超时，跳过当前商品')
+                    if server_task_id:
+                        api.report_progress(server_task_id, "running", progress={
+                            "current_product": task_id,
+                            "status": "captcha_timeout",
+                            "message": "验证码等待超时"
+                        })
+                    tab_detail.close()
+                    save_task(task_id, 'failed', file_name=tab_detail.title, url=product_url, batch_id=batch_id, error='验证码等待超时')
+                    return None
+                else:
+                    print('[验证码] 人工验证通过，继续执行')
+            else:
+                print('[验证码] 自动验证通过')
+        else:
+            print('[验证码] 未找到滑动条，可能是其他类型验证码')
+            # 上报服务器等待人工处理
+            if server_task_id:
+                api.report_progress(server_task_id, "running", progress={
+                    "current_product": task_id,
+                    "status": "waiting_captcha",
+                    "message": "遇到未知类型验证码，等待人工操作"
+                })
+            
+            # 等待人工处理
+            wait_count = 0
+            max_wait = 300
+            while "验证码" in tab_detail.title and wait_count < max_wait:
+                time.sleep(1)
+                wait_count += 1
+                if wait_count % 10 == 0:
+                    print(f'[验证码] 已等待 {wait_count} 秒，请人工完成验证...')
+            
+            if "验证码" in tab_detail.title:
+                print('[验证码] 等待超时，跳过当前商品')
+                tab_detail.close()
+                save_task(task_id, 'failed', file_name=tab_detail.title, url=product_url, batch_id=batch_id, error='验证码等待超时')
+                return None
+
+
     file_name = product_title
     file_name = os.path.join(base_path, file_name)
     print(file_name)

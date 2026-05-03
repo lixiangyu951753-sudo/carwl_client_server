@@ -184,6 +184,7 @@
         .status-succeeded { background: #f6ffed; color: #52c41a; }
         .status-failed { background: #fff1f0; color: #ff4d4f; }
         .status-canceled { background: #f5f5f5; color: #999; }
+        .status-waiting_captcha { background: #fff7e6; color: #fa8c16; }
         
         /* 客户端状态 */
         .client-online { color: #52c41a; }
@@ -300,6 +301,7 @@
                         <option value="">全部状态</option>
                         <option value="pending">待执行</option>
                         <option value="running">执行中</option>
+                        <option value="waiting_captcha">等待验证码</option>
                         <option value="succeeded">已完成</option>
                         <option value="failed">失败</option>
                         <option value="canceled">已取消</option>
@@ -574,7 +576,7 @@
             if (tasksData.code === 'OK') {
                 const tasks = tasksData.data.items || [];
                 document.getElementById('stat-pending').textContent = tasks.filter(t => t.status === 'pending').length;
-                document.getElementById('stat-running').textContent = tasks.filter(t => t.status === 'running').length;
+                document.getElementById('stat-running').textContent = tasks.filter(t => t.status === 'running' || t.status === 'waiting_captcha').length;
                 document.getElementById('stat-succeeded').textContent = tasks.filter(t => t.status === 'succeeded').length;
                 document.getElementById('stat-failed').textContent = tasks.filter(t => t.status === 'failed').length;
             }
