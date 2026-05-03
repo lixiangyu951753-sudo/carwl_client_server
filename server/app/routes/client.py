@@ -117,6 +117,27 @@ def task_report():
 
     collector_task = db.collector_tasks.find_one({"taskId": task_id})
     if collector_task:
+        current_status = collector_task.get("status")
+
+        # 状态转移白名单
+        allowed_transitions = {
+            "pending": ["running", "canceled"],
+            "running": ["running", "succeeded", "failed", "canceled"],
+            "succeeded": [],
+            "failed": ["pending", "running"],
+            "canceled": ["pending"],
+            "partial_failed": ["running", "failed", "succeeded"],
+        }
+
+        allowed = allowed_transitions.get(current_status, [])
+        if status not in allowed and current_status != status:
+            # 不允许的状态转移，忽略此次上报
+            print(f"[task_report] 拒绝状态转移: {current_status} → {status} (taskId={task_id})")
+            return jsonify({
+                "code": 200,
+                "message": "status transition rejected"
+            })
+
         update_data = {
             "status": status,
             "updatedAt": datetime.now().isoformat()
@@ -172,8 +193,19 @@ def task_result():
 
     collector_task = db.collector_tasks.find_one({"taskId": task_id})
     if collector_task:
-        platform = collector_task.get("taskType", "shop")
+        # 防止重复上报：如果任务已经完成，跳过
+        if collector_task.get("status") in ["succeeded", "canceled"]:
+            print(f"[任务结果] 任务 {task_id} 已完成或已取消，跳过重复上报")
+            return jsonify({
+                "code": 200,
+                "message": "task already finished"
+            })
+
+        task_platform = collector_task.get("platform") or "1688"
         source_id = collector_task.get("sourceId", "")
+
+        insert_count = 0
+        skip_count = 0
 
         for product in products:
             source_url = product.get("url", "")
@@ -190,13 +222,19 @@ def task_result():
             if not dedupe_key:
                 dedupe_key = f"unknown:{source_url}"
 
+            # 去重检查
+            existing = db.collector_items.find_one({"dedupeKey": dedupe_key})
+            if existing:
+                skip_count += 1
+                continue
+
             image_urls = product.get("images", [])
             main_image_url = image_urls[0] if image_urls else ""
 
             item = {
                 "itemId": f"item_{uuid.uuid4().hex[:8]}",
                 "taskId": task_id,
-                "platform": "1688",
+                "platform": task_platform,
                 "sourceUrl": source_url,
                 "sourceProductId": source_product_id,
                 "dedupeKey": dedupe_key,
@@ -218,15 +256,16 @@ def task_result():
                 "updatedAt": datetime.now().isoformat()
             }
             db.collector_items.insert_one(item)
+            insert_count += 1
 
-        success_count = len(products)
         db.collector_tasks.update_one(
             {"taskId": task_id},
             {"$set": {
                 "status": "succeeded",
                 "progress": 100,
-                "successCount": success_count,
-                "totalCount": max(collector_task.get("totalCount", 0), success_count),
+                "successCount": insert_count,
+                "totalCount": max(collector_task.get("totalCount", 0), len(products)),
+                "duplicateCount": skip_count,
                 "finishedAt": datetime.now().isoformat(),
                 "updatedAt": datetime.now().isoformat()
             }}

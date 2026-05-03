@@ -1,4 +1,4 @@
-﻿import time
+import time
 import threading
 from api_client import ClientAPI
 import config
@@ -102,10 +102,12 @@ class TaskManager:
 
     def stop_task(self):
         print("[任务管理] 收到停止指令")
-        if self.current_task_id:
-            self.api.report_progress(self.current_task_id, "canceled", progress={"status": "stopped_by_server"})
-        self._stop_event.set()
+        task_to_cancel = self.current_task_id
+        self.current_task_id = None
         self.running = False
+        self._stop_event.set()
+        if task_to_cancel:
+            self.api.report_progress(task_to_cancel, "canceled", progress={"status": "stopped_by_server"})
 
     def run(self):
         print(f"[任务管理] 客户端启动，ID: {self.api.client_id}")

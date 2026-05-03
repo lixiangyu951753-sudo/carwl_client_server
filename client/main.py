@@ -6,7 +6,6 @@ from datetime import datetime
 from urllib.parse import urlparse
 import time
 
-import requests
 from DrissionPage import ChromiumPage,ChromiumOptions
 
 from api_client import ClientAPI
@@ -128,6 +127,11 @@ def shop_detail(batch_id: str, server_task_id: str = None):
                 wait_count = 0
                 max_wait = 300  # 5分钟
                 while "验证码" in tab_detail.title and wait_count < max_wait:
+                    if check_task_canceled():
+                        print('[验证码] 任务被取消，停止等待')
+                        tab_detail.close()
+                        save_task(task_id, 'canceled', file_name=tab_detail.title, url=product_url, batch_id=batch_id, error='任务被取消')
+                        return None
                     time.sleep(1)
                     wait_count += 1
                     if wait_count % 10 == 0:
@@ -162,6 +166,11 @@ def shop_detail(batch_id: str, server_task_id: str = None):
             wait_count = 0
             max_wait = 300
             while "验证码" in tab_detail.title and wait_count < max_wait:
+                if check_task_canceled():
+                    print('[验证码] 任务被取消，停止等待')
+                    tab_detail.close()
+                    save_task(task_id, 'canceled', file_name=tab_detail.title, url=product_url, batch_id=batch_id, error='任务被取消')
+                    return None
                 time.sleep(1)
                 wait_count += 1
                 if wait_count % 10 == 0:
@@ -188,11 +197,16 @@ def shop_detail(batch_id: str, server_task_id: str = None):
     print(len(divs))
     for div in divs:
         style = div.ele('tag:span').attr('style')
+        if not style:
+            continue
         print(style)
         pattern = r'url\("([^"]+)"'
         match = re.search(pattern, style)
         if match:
             img_url = match.group(1)
+            if not img_url or img_url == 'undefined' or not img_url.startswith('http'):
+                print(f'跳过无效图片URL: {img_url}')
+                continue
             img_url = img_url.replace("_b.jpg", "_.webp")
             print(img_url)
             image_urls.append(img_url)
@@ -268,7 +282,6 @@ def shop_detail(batch_id: str, server_task_id: str = None):
                 price_max = str(max(prices))
     except Exception as e:
         print(f"价格解析异常: {e}")
-    
         print('未找到价格')
 
     supplier_name = ""
@@ -282,18 +295,10 @@ def shop_detail(batch_id: str, server_task_id: str = None):
             supplier_url = shop_link.attr('href') or ""
     except Exception as e:
         print(f"供应商解析异常: {e}")
-    
         print('未找到供应商')
-
+    # 解析描述暂时为空
     description = ""
-    try:
-        desc_elem = tab_detail.ele('.html-description', timeout=2)
-        if desc_elem:
-            description = desc_elem.innerHTML[:5000] if desc_elem.innerHTML else ""
-    except Exception as e:
-        print(f"描述解析异常: {e}")
     
-        print('未找到描述')
 
     print('关闭当前详情标签页')
     tab_detail.close()
@@ -396,7 +401,7 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
                             "current_product": completed_count
                         })
                     #测试只采集一条
-                    break
+                    # break
 
                 next_btn = tab.ele('下一页')
                 if not next_btn:

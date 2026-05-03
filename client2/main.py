@@ -312,7 +312,7 @@ def shop_list(server_task_id: str = None, shop_url: str = None):
                 "local_folder": latest_file,
                 "priceMin": data.get('price', ''),
                 "priceMax": data.get('price', ''),
-                "supplierName": "",
+                "supplierName": data.get('supplierName', ''),
                 "supplierUrl": shop_url,
                 "description": "",
                 "rawData": {

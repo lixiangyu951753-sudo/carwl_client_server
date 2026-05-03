@@ -1,4 +1,5 @@
 import requests
+import time
 from datetime import datetime
 
 
@@ -49,7 +50,7 @@ class ClientAPI:
                 json={
                     "client_id": self.client_id,
                     "task_id": task_id,
-                    "status": "accepted",
+                    "status": "running",
                     "progress": {"status": "accepted", "timestamp": datetime.now().isoformat()},
                     "timestamp": datetime.now().isoformat()
                 }, timeout=10
@@ -78,7 +79,7 @@ class ClientAPI:
             print(f"[任务拒绝] 拒绝任务失败: {e}")
             return False
 
-    def report_progress(self, task_id: str, status: str, progress: dict = None, error: str = None):
+    def report_progress(self, task_id: str, status: str, progress: dict = None, error: str = None) -> bool:
         data = {
             "client_id": self.client_id,
             "task_id": task_id,
@@ -87,15 +88,27 @@ class ClientAPI:
             "error": error,
             "timestamp": datetime.now().isoformat()
         }
-        try:
-            self.session.post(
-                f"{self.server_url}/client/task_report",
-                json=data, timeout=10
-            )
-        except Exception as e:
-            print(f"[进度上报] 错误: {e}")
+        for attempt in range(3):
+            try:
+                resp = self.session.post(
+                    f"{self.server_url}/client/task_report",
+                    json=data, timeout=10
+                )
+                result = resp.json()
+                if result.get('code') == 200:
+                    return True
+                if result.get('message') == 'status transition rejected':
+                    print(f"[进度上报] 状态转移被拒绝: {task_id} status={status}")
+                    return False
+            except Exception as e:
+                if attempt < 2:
+                    print(f"[进度上报] 重试 {attempt+1}/3: {e}")
+                    time.sleep(1)
+                else:
+                    print(f"[进度上报] 最终错误: {e}")
+        return False
 
-    def report_result(self, task_id: str, batch_id: str, products: list):
+    def report_result(self, task_id: str, batch_id: str, products: list) -> bool:  
         data = {
             "client_id": self.client_id,
             "task_id": task_id,
@@ -103,11 +116,20 @@ class ClientAPI:
             "products": products,
             "timestamp": datetime.now().isoformat()
         }
-        try:
-            self.session.post(
-                f"{self.server_url}/client/task_result",
-                json=data, timeout=30
-            )
-            print(f"[结果上报] 成功，共 {len(products)} 个商品")
-        except Exception as e:
-            print(f"[结果上报] 错误: {e}")
+        for attempt in range(3):
+            try:
+                resp = self.session.post(
+                    f"{self.server_url}/client/task_result",
+                    json=data, timeout=30
+                )
+                result = resp.json()
+                if result.get('code') == 200:
+                    print(f"[结果上报] 成功，共 {len(products)} 个商品")
+                    return True
+            except Exception as e:
+                if attempt < 2:
+                    print(f"[结果上报] 重试 {attempt+1}/3: {e}")
+                    time.sleep(2)
+                else:
+                    print(f"[结果上报] 最终错误: {e}")
+        return False

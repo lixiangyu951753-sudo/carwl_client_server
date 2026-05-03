@@ -73,33 +73,22 @@ def generate_human_track(distance):
     return track
 
 
-# ==========================
-# DrissionPage 执行拖动
-# ==========================
+if __name__ == '__main__':
+    from DrissionPage import Chromium, ChromiumOptions
 
-from DrissionPage import Chromium,ChromiumOptions
+    options = ChromiumOptions()
+    browser = Chromium(options)
+    tab = browser.new_tab('https://detail.1688.com/offer/656742829692.html?_t=1777445697861&spm=a2615.7691456.co_0_0_wangpu_score_0_0_0_0_0_0_0000_0.0')
 
-options = ChromiumOptions()
-
-
-browser = Chromium(options)
-tab=browser.new_tab('https://detail.1688.com/offer/656742829692.html?_t=1777445697861&spm=a2615.7691456.co_0_0_wangpu_score_0_0_0_0_0_0_0000_0.0')
-
-# 滑块按钮元素（自己改选择器）
-slder=tab.ele('#nc_1_n1z')
-if slder:
-    print('滑动条存在')
-# 假设识别出距离
-    distance = 280
-
-    track = generate_human_track(distance)
-
-    act = tab.actions
-    act.hold(slder)
-
-    for dx, dy, dt in track:
-        act.move(dx, dy)
-        time.sleep(dt)
-
-    act.release()
-    print("拖动完成")
+    slder = tab.ele('#nc_1_n1z')
+    if slder:
+        print('滑动条存在')
+        distance = 280
+        track = generate_human_track(distance)
+        act = tab.actions
+        act.hold(slder)
+        for dx, dy, dt in track:
+            act.move(dx, dy)
+            time.sleep(dt)
+        act.release()
+        print("拖动完成")
