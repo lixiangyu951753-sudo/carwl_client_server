@@ -2,14 +2,14 @@ import os
 
 CLIENT_ID = 'client_1688_image_01'
 
-CLIENT_TYPE = 'shop_image'
+CLIENT_TYPE = 'shop'
 
 CLIENT_CAPABILITIES = {
     "platform": "1688",
     "capabilities": ["image"]
 }
 
-SERVER_URL = 'http://localhost:5001/api'
+SERVER_URL = 'http://localhost:3015/api'
 HEARTBEAT_INTERVAL = 5
 HEARTBEAT_TIMEOUT = 10
 HEARTBEAT_MAX_RETRIES = 3
