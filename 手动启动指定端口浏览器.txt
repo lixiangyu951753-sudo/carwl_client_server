@@ -6,3 +6,18 @@ docker命令:docker-compose up -d --build
 https://xindeyi.1688.com/page/offerlist.htm
 
 docker compose up --build -d
+
+ apps/client (Python 爬虫客户端) — 不由 BFF 代理，直接连 collector 这个问题需要解决
+
+
+ 1. 读取任务目标
+2. 确认当前分支 / worktree / git 状态
+3. 阅读相关文档和代码
+4. 输出任务理解与影响范围
+5. 制定修改计划
+6. 执行代码修改
+7. 自检架构边界
+8. 执行验证命令
+9. 输出最终报告
+10. 提交 commit / push / PR
+11. 合并后清理 worktree / 分支

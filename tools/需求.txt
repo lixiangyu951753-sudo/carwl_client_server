@@ -1,0 +1,23 @@
+目标复制（.env.development） 文件从以下目录
+
+
+D:\works\ecomops\repo\apps\admin
+D:\works\ecomops\repo\apps\api
+D:\works\ecomops\repo\apps\web
+D:\works\ecomops\repo\services\aigc-service
+D:\works\ecomops\repo\services\file-service
+D:\works\ecomops\repo\services\product-center
+D:\works\ecomops\repo\services\user-center
+
+粘贴到对应文件夹下面的对应目录
+比如我会给您目录
+D:\works\ecomops\repo-add-crawl-oss
+就是把对应的文件复制到对应文件夹中
+D:\works\ecomops\repo-add-crawl-oss\apps\admin
+D:\works\ecomops\repo-add-crawl-oss\apps\api
+D:\works\ecomops\repo-add-crawl-oss\apps\web
+D:\works\ecomops\repo-add-crawl-oss\services\aigc-service
+D:\works\ecomops\repo-add-crawl-oss\services\file-service
+D:\works\ecomops\repo-add-crawl-oss\services\product-center
+D:\works\ecomops\repo-add-crawl-oss\services\user-center
+写一个py脚本执行
